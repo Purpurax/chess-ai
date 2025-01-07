@@ -1,10 +1,17 @@
-mod board;
-mod piece;
+mod core;
+mod ui;
 
-use crate::board::Board;
+use good_web_game as ggez;
+use ggez::GameResult;
+use ggez::conf::Conf;
+use ui::Engine;
 
-fn main() {
-    let board: Board = Board::new();
-
-    println!("{}", board.to_string());
+fn main() -> GameResult {
+    let conf = Conf::default()
+        .cache(Some(include_bytes!("../assets.tar")))
+        .window_resizable(true)
+        .window_title("Chess AI | Purpurax".to_string());
+    
+    ggez::start(conf, move |context, quad_ctx|
+        Box::new(Engine::new(context, quad_ctx).unwrap()))
 }

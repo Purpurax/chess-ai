@@ -32,6 +32,7 @@ pub enum PieceType {
     King,
 }
 
+#[derive(Clone)]
 pub struct Piece {
     color: bool, // 0b0 black, 0b1 white
     piece_type: PieceType
@@ -58,6 +59,10 @@ impl Piece {
         };
     
         Piece { color, piece_type }
+    }
+
+    pub fn get_color(&self) -> bool {
+        self.color
     }
 
     pub fn to_char(&self) -> char {

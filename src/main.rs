@@ -8,7 +8,7 @@ use ui::Engine;
 
 fn main() -> GameResult {
     let conf = Conf::default()
-        .cache(Some(include_bytes!("../assets.tar")))
+        // .cache(Some(include_bytes!("../assets.tar")))
         .window_resizable(true)
         .window_title("Chess AI | Purpurax".to_string());
     

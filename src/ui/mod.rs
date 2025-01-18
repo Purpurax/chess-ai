@@ -116,6 +116,13 @@ impl Engine {
 
 impl EventHandler<GameError> for Engine {
     fn update(&mut self, _ctx: &mut Context, _quad_ctx: &mut GraphicsContext) -> GameResult {
+        if self.game.get_winner().is_some() {
+            if self.game.get_winner().unwrap() {
+                println!("White has won the game !!!");
+            } else {
+                println!("Black has won the game !!!");
+            }
+        }
 
         Ok(())
     }

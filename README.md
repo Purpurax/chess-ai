@@ -1,0 +1,6 @@
+- 2 pawn states
+- 2/3 king states
+- rest 1 state
+- colors
+- empty
+- Threat board, move board

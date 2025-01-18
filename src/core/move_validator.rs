@@ -66,22 +66,26 @@ fn is_path_clear(board: Board, from: &Position, to: &Position) -> bool {
 
 fn is_valid_pawn_move(to_piece: &Piece, player_turn: bool, from: &Position, to: &Position) -> bool {
     let valid_one_move: bool =
-        player_turn && (
-            from.row + 1 == to.row
-            && from.column == to.column
-        ) || !player_turn && (
-            from.row == to.row + 1
-            && from.column == to.column
+        to_piece.piece_type() == PieceType::Empty && (
+            player_turn && (
+                from.row + 1 == to.row
+                && from.column == to.column
+            ) || !player_turn && (
+                from.row == to.row + 1
+                && from.column == to.column
+            )
         );
     let valid_double_move: bool =
-        player_turn && (
-            from.row == 1
-            && to.row == 3
-            && from.column == to.column
-        ) || !player_turn && (
-            from.row == 6
-            && to.row == 4
-            && from.column == to.column
+        to_piece.piece_type() == PieceType::Empty && (
+            player_turn && (
+                from.row == 1
+                && to.row == 3
+                && from.column == to.column
+            ) || !player_turn && (
+                from.row == 6
+                && to.row == 4
+                && from.column == to.column
+            )
         );
     let valid_attack_move: bool =
         to_piece.piece_type() != PieceType::Empty && (

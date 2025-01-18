@@ -11,7 +11,9 @@ use ggez::cgmath::{Point2, Vector2};
 use miniquad::GraphicsContext;
 use std::collections::HashMap;
 
+use crate::core::board::Board;
 use crate::core::game::Game;
+use crate::core::move_generator::get_all_possible_moves;
 use crate::core::piece::Piece;
 use crate::core::position::Position;
 use crate::ui::logic::get_position_of_coordinates;
@@ -64,6 +66,8 @@ impl Engine {
         let white_rook: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_rook.png").unwrap();
         let white_queen: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_queen.png").unwrap();
         let white_king: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_king.png").unwrap();
+        let outline_green: Image = Image::new(ctx, quad_ctx, "/assets/outline_green.png").unwrap();
+        let outline_red: Image = Image::new(ctx, quad_ctx, "/assets/outline_red.png").unwrap();
         
         let images = HashMap::from([
             ("board".to_string(), board),
@@ -79,6 +83,8 @@ impl Engine {
             ("white rook".to_string(), white_rook),
             ("white queen".to_string(), white_queen),
             ("white king".to_string(), white_king),
+            ("outline green".to_string(), outline_green),
+            ("outline red".to_string(), outline_red),
         ]);
 
         images
@@ -161,6 +167,27 @@ impl EventHandler<GameError> for Engine {
             let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
             let _ = graphics::draw(ctx, quad_ctx, &image.unwrap(), param);
         });
+
+        /* Possible moves and takes */
+        if self.carry_piece.has_grabbed() {
+            get_all_possible_moves(
+                self.game.board.clone(),
+                self.game.player_turn,
+                self.carry_piece.position()
+            ).into_iter().for_each(|to| {
+                let image: Image =
+                    if Board::get_layer_value_at(&self.game.board.get_empty_layer(), &to) {
+                        self.images["outline green"].clone()
+                    } else {
+                        self.images["outline red"].clone()
+                    };
+    
+                let dest: Point2<f32> = determine_image_position(to, self.offsets, self.scales);
+    
+                let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
+                let _ = graphics::draw(ctx, quad_ctx, &image, param);
+            });
+        }
         
         /* Grabbed Piece */
         if self.carry_piece.has_grabbed() {
@@ -173,7 +200,6 @@ impl EventHandler<GameError> for Engine {
                 graphics::draw(ctx, quad_ctx, &image.unwrap(), param)?;
             }
         }
-
 
         graphics::present(ctx, quad_ctx)
     }

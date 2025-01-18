@@ -81,9 +81,9 @@ impl Board {
     }
 
     pub fn get_empty_layer(&self) -> u64 {
-        self.layer_pawn     | self.layer_knight
+        !(self.layer_pawn   | self.layer_knight
         | self.layer_bishop | self.layer_rook
-        | self.layer_queen  | self.layer_king
+        | self.layer_queen  | self.layer_king)
     }
 
     pub fn iterator<'a>(&'a self) -> impl Iterator<Item = u64> + 'a {

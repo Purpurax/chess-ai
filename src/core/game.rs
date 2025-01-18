@@ -5,7 +5,9 @@ use super::position::Position;
 pub struct Game {
     pub board: Board,
     pub player_turn: bool, // false is blacks turn
-    check: bool
+    check: bool,
+    check_mate: bool,
+    remis: bool
 }
 
 impl Game {
@@ -13,7 +15,9 @@ impl Game {
         Game {
             board: Board::new(),
             player_turn: true,
-            check: false
+            check: false,
+            check_mate: false,
+            remis: false
         }
     }
 

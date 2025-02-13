@@ -11,7 +11,6 @@ pub struct Board {
     pub layer_rook: u64,
     pub layer_king: u64,
     pub layer_queen: u64,
-    pub king_moved: bool
 }
 
 impl Board {
@@ -25,7 +24,6 @@ impl Board {
             layer_rook: 0b0,
             layer_queen: 0b0,
             layer_king: 0b0,
-            king_moved: false
         }
     }
 
@@ -37,9 +35,32 @@ impl Board {
             layer_bishop:    0b0010010000000000000000000000000000000000000000000000000000100100,
             layer_rook:      0b1000000100000000000000000000000000000000000000000000000010000001,
             layer_queen:     0b0000100000000000000000000000000000000000000000000000000000001000,
-            layer_king:      0b0001000000000000000000000000000000000000000000000000000000010000,
-            king_moved: false
+            layer_king:      0b0001000000000000000000000000000000000000000000000000000000010000
         }
+    }
+
+    pub fn import(layers: [u64; 7]) -> Board {
+        Board {
+            layer_color: layers[0],
+            layer_pawn: layers[1],
+            layer_knight: layers[2],
+            layer_bishop: layers[3],
+            layer_rook: layers[4],
+            layer_queen: layers[5],
+            layer_king: layers[6]
+        }
+    }
+
+    pub fn export(&self) -> [u64; 7] {
+        [
+            self.layer_color,
+            self.layer_pawn,
+            self.layer_knight,
+            self.layer_bishop,
+            self.layer_rook,
+            self.layer_queen,
+            self.layer_king
+        ]
     }
 
     fn get_piece_binary_at(&self, position: &Position) -> u64 {
@@ -107,6 +128,15 @@ impl Board {
         })
     }
 
+    pub fn iterator_positions_and_pieces<'a>(&'a self) -> impl Iterator<Item = (Position, Piece)> + 'a {
+        self.iterator_pieces().enumerate().map(|(i, piece)| {
+            let row: u8 = i.div_euclid(8) as u8;
+            let column: u8 = i.rem_euclid(8) as u8;
+            
+            (Position::new(row, column), piece)
+        })
+    }
+
     pub fn to_string(&self) -> String {
         let mut column: u8 = 0;
         
@@ -133,7 +163,7 @@ impl Board {
     }
 
     pub fn is_move_valid(&self, player_turn: bool, from: Position, to: Position) -> bool {
-        return move_validator::is_move_valid(self.clone(), player_turn, from, to);
+        return move_validator::is_move_valid(self.clone(), player_turn, from, to, true);
     }
 
     pub fn move_from_to(&mut self, from: &Position, to: &Position) {

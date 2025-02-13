@@ -16,6 +16,7 @@ use crate::core::game::Game;
 use crate::core::move_generator::get_all_possible_moves;
 use crate::core::piece::Piece;
 use crate::core::position::Position;
+use crate::core::snapshot;
 use crate::ui::logic::get_position_of_coordinates;
 
 use self::carry_piece::CarryPiece;
@@ -28,7 +29,9 @@ pub struct Engine {
     offsets: Point2<f32>,
     scales: Vector2<f32>,
 
-    carry_piece: CarryPiece
+    carry_piece: CarryPiece,
+
+    debug: bool
 }
 
 impl Engine {
@@ -48,7 +51,8 @@ impl Engine {
             images,
             offsets,
             scales,
-            carry_piece
+            carry_piece,
+            debug: false
         })
     }
 
@@ -123,10 +127,10 @@ impl Engine {
 impl EventHandler<GameError> for Engine {
     fn update(&mut self, _ctx: &mut Context, _quad_ctx: &mut GraphicsContext) -> GameResult {
         if self.game.get_winner().is_some() {
-            if self.game.get_winner().unwrap() {
-                println!("White has won the game !!!");
-            } else {
-                println!("Black has won the game !!!");
+            match self.game.get_winner().unwrap() {
+                0 => println!("Black has won the game !!!"),
+                1 => println!("White has won the game !!!"),
+                _ => println!("Remis")
             }
         }
 
@@ -135,7 +139,11 @@ impl EventHandler<GameError> for Engine {
     
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut GraphicsContext) -> GameResult {
         /* Background */
-        graphics::clear(ctx, quad_ctx, Color::from_rgb_u32(0x3F2832));
+        if self.debug {
+            graphics::clear(ctx, quad_ctx, Color::from_rgb_u32(0x46a12f));
+        } else {
+            graphics::clear(ctx, quad_ctx, Color::from_rgb_u32(0x3F2832));
+        }
         
         let param: DrawParam = DrawParam::new().dest(self.offsets).scale(self.scales);
         graphics::draw(ctx, quad_ctx, &self.images["board"], param)?;
@@ -173,7 +181,8 @@ impl EventHandler<GameError> for Engine {
             get_all_possible_moves(
                 self.game.board.clone(),
                 self.game.player_turn,
-                self.carry_piece.position()
+                self.carry_piece.position(),
+                true
             ).into_iter().for_each(|to| {
                 let image: Image =
                     if Board::get_layer_value_at(&self.game.board.get_empty_layer(), &to) {
@@ -266,8 +275,51 @@ impl EventHandler<GameError> for Engine {
         }
 
         self.game.perform_move(&self.carry_piece.position(), &clicked_position);
-        self.game.next_player();
 
         self.carry_piece.clear();
+    }
+
+    fn key_up_event(
+            &mut self,
+            _ctx: &mut Context,
+            _quad_ctx: &mut GraphicsContext,
+            keycode: miniquad::KeyCode,
+            _keymods: event::KeyMods,
+        ) {
+        if keycode == miniquad::KeyCode::Enter {
+            self.debug = !self.debug;
+            if self.debug {
+                snapshot::enter_debug(&self.game);
+
+                self.game.board.clone()
+                    .iterator_positions_and_pieces()
+                    .flat_map(|(from_pos, piece)| {
+                        get_all_possible_moves(self.game.board.clone(), piece.get_color(), from_pos.clone(), true)
+                        .into_iter()
+                        .map(move |to_pos| {
+                            (from_pos.clone(), to_pos.clone())
+                        }).map(|(from, to)| {
+                            let mut new_board: Board = self.game.board.clone();
+                            new_board.move_from_to(&from, &to);
+                            new_board
+                        })
+                    }).for_each(|board| {
+                        println!("{}", board.to_string());
+                        snapshot::save_state(board);
+                    });
+            } else {
+                self.game.board = Board::import(snapshot::exit_debug());
+            }
+        }
+
+        if !self.debug {
+            return
+        }
+
+        if keycode == miniquad::KeyCode::Left {
+            self.game.board = Board::import(snapshot::debug_left());
+        } else if keycode == miniquad::KeyCode::Right {
+            self.game.board = Board::import(snapshot::debug_right());
+        }
     }
 }

@@ -31,7 +31,7 @@ pub enum PieceType {
     King,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Piece {
     color: bool, // 0b0 black, 0b1 white
     piece_type: PieceType

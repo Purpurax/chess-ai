@@ -1,12 +1,13 @@
 use crate::core::board::Board;
 
-use super::position::Position;
+use super::{position::Position, move_validator::{is_check, is_checkmate, is_remis}};
 
 pub struct Game {
     pub board: Board,
+    pub king_moved: bool,
     pub player_turn: bool, // false is blacks turn
-    check: bool,
-    check_mate: bool,
+    pub check: bool,
+    checkmate: bool,
     remis: bool
 }
 
@@ -14,9 +15,10 @@ impl Game {
     pub fn new() -> Game {
         Game {
             board: Board::new(),
+            king_moved: false,
             player_turn: true,
             check: false,
-            check_mate: false,
+            checkmate: false,
             remis: false
         }
     }
@@ -27,28 +29,31 @@ impl Game {
 
     pub fn perform_move(&mut self, from: &Position, to: &Position) {
         self.board.move_from_to(from, to);
+        self.check = is_check(self.board.clone(), self.player_turn);
+        
+        if is_checkmate(self.board.clone(), self.player_turn) {
+            return self.checkmate = true;
+        } else if is_remis(self.board.clone(), self.player_turn) {
+            return self.remis = true;
+        }
+        println!("check: {}, checkmate: {}, player: {}", self.check, self.checkmate, self.player_turn);
+
+        self.next_player();
     }
 
     pub fn next_player(&mut self) {
         self.player_turn = !self.player_turn
     }
 
-    pub fn get_winner(&self) -> Option<bool> {
-        // let layer_occupied: u64 = self.board.layer_occupied;
-        // let layer_color: u64 = self.board.layer_color;
-        // let layer_king: u64 = self.board.layer_king;
-
-        // let black_has_no_king: bool = !layer_color & layer_occupied & layer_king == 0b0;
-        // let white_has_no_king: bool = layer_color & layer_occupied & layer_king == 0b0;
-
-        // if black_has_no_king {
-        //     Some(true)
-        // } else if white_has_no_king {
-        //     Some(false)
-        // } else {
-        //     None
-        // }
-
-        None
+    pub fn get_winner(&self) -> Option<u8> {
+        if self.checkmate && self.player_turn {
+            Some(1)
+        } else if self.checkmate && !self.player_turn {
+            Some(0)
+        } else if self.remis {
+            Some(2)
+        } else {
+            None
+        }
     }
 }

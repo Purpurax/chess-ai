@@ -1,6 +1,6 @@
 use super::{position::Position, board::Board, piece::{Piece, PieceType}, move_validator::is_move_valid};
 
-pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position) -> Vec<Position> {
+pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position, checking_check: bool) -> Vec<Position> {
     let from_piece: Piece = board.get_piece_at(&pos);
 
     let row: u8 = pos.row;
@@ -29,7 +29,7 @@ pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position) ->
                 } else {
                     Some(Position::new((row as i8 + *row_mod) as u8, (column as i8 + *column_mod) as u8))
                 }
-            ).filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone())
+            ).filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone(), checking_check)
             ).collect()
         },
         PieceType::Knight => {
@@ -55,7 +55,7 @@ pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position) ->
                 } else {
                     Some(Position::new((row as i8 + *row_mod) as u8, (column as i8 + *column_mod) as u8))
                 }
-            ).filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone())
+            ).filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone(), checking_check)
             ).collect()
         },
         PieceType::Bishop => {
@@ -89,7 +89,7 @@ pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position) ->
                 moves.push(Position::new(t_row, t_column));
             }
             
-            moves.into_iter().filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone())
+            moves.into_iter().filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone(), checking_check)
             ).collect()
         },
         PieceType::Rook => {
@@ -110,7 +110,7 @@ pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position) ->
                 Position::new(row, 5),
                 Position::new(row, 6),
                 Position::new(row, 7)
-            ].into_iter().filter(|to| *to != pos && is_move_valid(board.clone(), player_turn, pos.clone(), to.clone())
+            ].into_iter().filter(|to| *to != pos && is_move_valid(board.clone(), player_turn, pos.clone(), to.clone(), checking_check)
             ).collect()
         },
         PieceType::Queen => {
@@ -144,7 +144,7 @@ pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position) ->
                 moves.push(Position::new(t_row, t_column));
             }
             
-            moves.into_iter().filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone())
+            moves.into_iter().filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone(), checking_check)
             ).chain([
                 Position::new(0, column),
                 Position::new(1, column),
@@ -162,7 +162,7 @@ pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position) ->
                 Position::new(row, 5),
                 Position::new(row, 6),
                 Position::new(row, 7)
-            ].into_iter().filter(|to| *to != pos && is_move_valid(board.clone(), player_turn, pos.clone(), to.clone())
+            ].into_iter().filter(|to| *to != pos && is_move_valid(board.clone(), player_turn, pos.clone(), to.clone(), checking_check)
             )).collect()
         },
         PieceType::King => {
@@ -184,7 +184,7 @@ pub fn get_all_possible_moves(board: Board, player_turn: bool, pos: Position) ->
                 } else {
                     Some(Position::new((row as i8 + *row_mod) as u8, (column as i8 + *column_mod) as u8))
                 }
-            ).filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone())
+            ).filter(|to| is_move_valid(board.clone(), player_turn, pos.clone(), to.clone(), checking_check)
             ).collect()
         },
     }

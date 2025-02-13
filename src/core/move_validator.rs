@@ -1,10 +1,11 @@
-use super::{position::Position, board::Board, piece::{Piece, PieceType}};
+use super::{position::Position, board::Board, piece::{Piece, PieceType}, move_generator::get_all_possible_moves, snapshot};
 
 pub fn is_move_valid(
         board: Board,
         player_turn: bool,
         from: Position,
-        to: Position
+        to: Position,
+        checking_check: bool
     ) -> bool {
     if !is_position_on_board(&from)
     || !is_position_on_board(&to)
@@ -19,7 +20,13 @@ pub fn is_move_valid(
         return false
     }
 
-    if !is_path_clear(board, &from, &to) && from_piece.piece_type() != PieceType::Knight {
+    if !is_path_clear(board.clone(), &from, &to) && from_piece.piece_type() != PieceType::Knight {
+        return false
+    }
+
+    let mut applied_board: Board = board.clone();
+    applied_board.move_from_to(&from, &to);
+    if checking_check && is_check(applied_board, !player_turn) {
         return false
     }
 
@@ -32,6 +39,64 @@ pub fn is_move_valid(
         PieceType::Queen => is_valid_queen_move(&from, &to),
         PieceType::King => is_valid_king_move(&from, &to),
     }
+}
+
+pub fn is_check(board: Board, player_turn: bool) -> bool {
+    let king_layer: u64 =
+        if player_turn {
+            (!board.layer_color) & board.layer_king
+        } else {
+            board.layer_color & board.layer_king
+        };
+    if king_layer == 0b0 {
+        return true
+    }
+    let king_index: u32 = king_layer.ilog2();
+        
+
+    board.clone().iterator_positions_and_pieces()
+    .filter_map(|(pos, piece)| {
+        if piece.get_color() == player_turn {
+            Some(pos)
+        } else {
+            None
+        }
+    }).any(|from_pos| {
+        get_all_possible_moves(board.clone(), player_turn, from_pos, false)
+        .into_iter()
+        .any(|to_pos| {
+            let index: u8 = to_pos.row * 8 + to_pos.column;
+            king_index == index as u32
+        })
+    })
+}
+
+pub fn is_checkmate(board: Board, player_turn: bool) -> bool {
+    board.clone()
+    .iterator_positions_and_pieces()
+    .filter_map(|(pos, piece)| {
+        if piece.get_color() != player_turn {
+            Some(pos)
+        } else {
+            None
+        }
+    }).flat_map(|from_pos| {
+        get_all_possible_moves(board.clone(), !player_turn, from_pos.clone(), true)
+        .into_iter()
+        .map(move |to_pos| {
+            (from_pos.clone(), to_pos.clone())
+        })
+    }).map(|(from, to)| {
+        let mut new_board: Board = board.clone();
+        new_board.move_from_to(&from, &to);
+        new_board
+    }).all(|new_board| {
+        is_check(new_board, player_turn)
+    })
+}
+
+pub fn is_remis(board: Board, player_turn: bool) -> bool {
+    false
 }
 
 fn is_position_on_board(position: &Position) -> bool {

@@ -101,7 +101,7 @@ impl Board {
         Piece::binary_to_piece(binary_piece)
     }
 
-    pub fn get_layer_value_at(layer: &u64, position: &Position) -> bool {
+    pub fn get_layer_value_at(layer: u64, position: &Position) -> bool {
         let shift_amount: u8 = position.row * 8 + position.column;
         let mask: u64 = 0b1 << shift_amount;
 
@@ -169,8 +169,8 @@ impl Board {
         result_string
     }
 
-    pub fn is_move_valid(&self, player_turn: bool, from: Position, to: Position) -> bool {
-        return move_validator::is_move_valid(self.clone(), player_turn, from, to, true);
+    pub fn is_move_valid(&self, player_turn: bool, from: &Position, to: &Position) -> bool {
+        return move_validator::is_move_valid(&self, player_turn, from, to, true);
     }
 
     pub fn move_from_to(&mut self, from: &Position, to: &Position) {

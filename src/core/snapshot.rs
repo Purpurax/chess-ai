@@ -1,4 +1,4 @@
-use super::{board::Board, game::{Game, self}, move_validator::is_check};
+use super::{board::Board, game::Game, move_validator::is_check};
 
 static mut SNAPSHOT: Snapshot = Snapshot {
     game_boards: vec![],
@@ -10,7 +10,7 @@ struct Snapshot {
     debug_index: usize
 }
 
-pub fn save_state(board: Board) {
+pub fn save_state(board: &Board) {
     let layers: [u64; 7] = board.export();
     unsafe {
         SNAPSHOT.game_boards.push(layers);
@@ -48,7 +48,7 @@ pub fn debug_right() -> [u64; 7] {
         } else {
             println!("right reached (debug_index: {})", SNAPSHOT.debug_index);
         }
-        if is_check(Board::import(SNAPSHOT.game_boards[SNAPSHOT.debug_index]), false) {
+        if is_check(&Board::import(SNAPSHOT.game_boards[SNAPSHOT.debug_index]), false) {
             println!("1111111111111");
         } else {
             println!("0000000000000");

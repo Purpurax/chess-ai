@@ -9,4 +9,5 @@
 next todo:
 - remis https://www.chess.com/terms/draw-chess
 - castle and specials
+- queen upgrade
 -> then testing (increase snapshots capabilities with importing chess codes)

@@ -13,9 +13,9 @@ impl CarryPiece {
         }
     }
 
-    pub fn set(&mut self, new_position: Position, new_piece: Piece) {
-        self.grabbed_position = Some(new_position);
-        self.grabbed_piece = Some(new_piece);
+    pub fn set(&mut self, position: &Position, piece: &Piece) {
+        self.grabbed_position = Some(position.clone());
+        self.grabbed_piece = Some(piece.clone());
     }
 
     pub fn clear(&mut self) {
@@ -23,19 +23,11 @@ impl CarryPiece {
         self.grabbed_piece = None;
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.grabbed_position.is_none()
+    pub fn position(&self) -> &Option<Position> {
+        &self.grabbed_position
     }
 
-    pub fn has_grabbed(&self) -> bool {
-        !self.is_empty()
-    }
-
-    pub fn position(&self) -> Position {
-        self.grabbed_position.clone().unwrap()
-    }
-
-    pub fn piece(&self) -> Piece {
-        self.grabbed_piece.clone().unwrap()
+    pub fn piece(&self) -> &Option<Piece> {
+        &self.grabbed_piece
     }
 }

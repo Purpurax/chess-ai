@@ -24,19 +24,22 @@ impl Game {
     }
 
     pub fn valid_turn(&self, from: &Position, to: &Position) -> bool {
-        self.board.is_move_valid(self.player_turn, from.clone(), to.clone())
+        self.board.is_move_valid(self.player_turn, from, to)
     }
 
     pub fn perform_move(&mut self, from: &Position, to: &Position) {
+        if !self.valid_turn(from, to) {
+            return
+        }
+
         self.board.move_from_to(from, to);
-        self.check = is_check(self.board.clone(), self.player_turn);
+        self.check = is_check(&self.board, self.player_turn);
         
-        if !self.check && is_remis(self.board.clone(), self.player_turn) {
+        if !self.check && is_remis(&self.board, self.player_turn) {
             return self.remis = true;
-        } else if self.check && is_checkmate(self.board.clone(), self.player_turn) {
+        } else if self.check && is_checkmate(&self.board, self.player_turn) {
             return self.checkmate = true;
         }
-        println!("check: {}, checkmate: {}, player: {}", self.check, self.checkmate, self.player_turn);
 
         self.next_player();
     }

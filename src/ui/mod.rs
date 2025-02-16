@@ -20,7 +20,7 @@ use crate::core::snapshot;
 use crate::ui::logic::get_position_of_coordinates;
 
 use self::carry_piece::CarryPiece;
-use self::logic::{valid_click_coordinates, determine_image, determine_image_position};
+use self::logic::{determine_image, determine_image_position};
 
 pub struct Engine {
     game: Game,
@@ -36,13 +36,13 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(ctx: &mut Context, quad_ctx: &mut GraphicsContext) -> GameResult<Engine> {
-        let game = Game::new();
+        let game: Game = Game::new();
         
-        let images = Engine::load_images(ctx, quad_ctx);
+        let images: HashMap<String, Image> = Engine::load_images(ctx, quad_ctx);
 
-        let (window_width, window_height) = graphics::drawable_size(quad_ctx);
-        let offsets = Engine::calculate_offsets(window_width, window_height);
-        let scales = Engine::calculate_scale(window_width, window_height);
+        let (window_width, window_height): (f32, f32) = graphics::drawable_size(quad_ctx);
+        let offsets: Point2<f32> = Engine::calculate_offsets(window_width, window_height);
+        let scales: Vector2<f32> = Engine::calculate_scale(window_width, window_height);
 
         let carry_piece: CarryPiece = CarryPiece::new();
 
@@ -57,41 +57,25 @@ impl Engine {
     }
 
     fn load_images(ctx: &mut Context, quad_ctx: &mut GraphicsContext) -> HashMap<String, Image> {
-        let board: Image = Image::new(ctx, quad_ctx, "/assets/board.png").unwrap();
-        let black_pawn: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_black_pawn.png").unwrap();
-        let black_knight: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_black_knight.png").unwrap();
-        let black_bishop: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_black_bishop.png").unwrap();
-        let black_rook: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_black_rook.png").unwrap();
-        let black_queen: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_black_queen.png").unwrap();
-        let black_king: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_black_king.png").unwrap();
-        let white_pawn: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_pawn.png").unwrap();
-        let white_knight: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_knight.png").unwrap();
-        let white_bishop: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_bishop.png").unwrap();
-        let white_rook: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_rook.png").unwrap();
-        let white_queen: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_queen.png").unwrap();
-        let white_king: Image = Image::new(ctx, quad_ctx, "/assets/pieces/piece_white_king.png").unwrap();
-        let outline_green: Image = Image::new(ctx, quad_ctx, "/assets/outline_green.png").unwrap();
-        let outline_red: Image = Image::new(ctx, quad_ctx, "/assets/outline_red.png").unwrap();
-        
-        let images = HashMap::from([
-            ("board".to_string(), board),
-            ("black pawn".to_string(), black_pawn),
-            ("black knight".to_string(), black_knight),
-            ("black bishop".to_string(), black_bishop),
-            ("black rook".to_string(), black_rook),
-            ("black queen".to_string(), black_queen),
-            ("black king".to_string(), black_king),
-            ("white pawn".to_string(), white_pawn),
-            ("white knight".to_string(), white_knight),
-            ("white bishop".to_string(), white_bishop),
-            ("white rook".to_string(), white_rook),
-            ("white queen".to_string(), white_queen),
-            ("white king".to_string(), white_king),
-            ("outline green".to_string(), outline_green),
-            ("outline red".to_string(), outline_red),
-        ]);
-
-        images
+        [
+            ("board", "/assets/board.png"),
+            ("black pawn", "/assets/pieces/piece_black_pawn.png"),
+            ("black knight", "/assets/pieces/piece_black_knight.png"),
+            ("black bishop", "/assets/pieces/piece_black_bishop.png"),
+            ("black rook", "/assets/pieces/piece_black_rook.png"),
+            ("black queen", "/assets/pieces/piece_black_queen.png"),
+            ("black king", "/assets/pieces/piece_black_king.png"),
+            ("white pawn", "/assets/pieces/piece_white_pawn.png"),
+            ("white knight", "/assets/pieces/piece_white_knight.png"),
+            ("white bishop", "/assets/pieces/piece_white_bishop.png"),
+            ("white rook", "/assets/pieces/piece_white_rook.png"),
+            ("white queen", "/assets/pieces/piece_white_queen.png"),
+            ("white king", "/assets/pieces/piece_white_king.png"),
+            ("outline green", "/assets/outline_green.png"),
+            ("outline red", "/assets/outline_red.png")
+        ].map(|(key, value)| {
+            (key.to_string(), Image::new(ctx, quad_ctx, value).unwrap())
+        }).into_iter().collect()
     }
     
     fn calculate_offsets(window_width: f32, window_height: f32) -> Point2<f32> {
@@ -161,37 +145,37 @@ impl EventHandler<GameError> for Engine {
                 column = 0;
             }
 
-            if self.carry_piece.has_grabbed() && self.carry_piece.position() == position {
+            if *self.carry_piece.position() == Some(position.clone()) {
                 return
             }
 
-            let image: Option<Image> = determine_image(&self.images, piece);
+            let image: Option<Image> = determine_image(&self.images, &piece);
             if image.is_none() {
                 return
             }
 
-            let dest: Point2<f32> = determine_image_position(position, self.offsets, self.scales);
+            let dest: Point2<f32> = determine_image_position(&position, &self.offsets, &self.scales);
 
             let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
             let _ = graphics::draw(ctx, quad_ctx, &image.unwrap(), param);
         });
 
         /* Possible moves and takes */
-        if self.carry_piece.has_grabbed() {
+        if let Some(carry_position) = self.carry_piece.position() {
             get_all_possible_moves(
-                self.game.board.clone(),
+                &self.game.board,
                 self.game.player_turn,
-                self.carry_piece.position(),
+                carry_position,
                 true
             ).into_iter().for_each(|to| {
                 let image: Image =
-                    if Board::get_layer_value_at(&self.game.board.get_empty_layer(), &to) {
+                    if Board::get_layer_value_at(self.game.board.get_empty_layer(), &to) {
                         self.images["outline green"].clone()
                     } else {
                         self.images["outline red"].clone()
                     };
     
-                let dest: Point2<f32> = determine_image_position(to, self.offsets, self.scales);
+                let dest: Point2<f32> = determine_image_position(&to, &self.offsets, &self.scales);
     
                 let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
                 let _ = graphics::draw(ctx, quad_ctx, &image, param);
@@ -199,9 +183,8 @@ impl EventHandler<GameError> for Engine {
         }
         
         /* Grabbed Piece */
-        if self.carry_piece.has_grabbed() {
-            let piece: Piece = self.carry_piece.piece();
-            let image: Option<Image> = determine_image(&self.images, piece);
+        if let Some(piece) = self.carry_piece.piece() {
+            let image: Option<Image> = determine_image(&self.images, &piece);
 
             if image.is_some() {
                 let dest: Point2<f32> = ctx.mouse_context.mouse_position() - (80.0*self.scales);
@@ -232,18 +215,12 @@ impl EventHandler<GameError> for Engine {
             _button: event::MouseButton,
             x: f32,
             y: f32) {
-        let logical_x: f32 = (x - self.offsets.x) / self.scales.x;
-        let logical_y: f32 = (y - self.offsets.y) / self.scales.y;
+        if let Some(position) = get_position_of_coordinates(x, y, &self.offsets, &self.scales) {
+            let piece: Piece = self.game.board.get_piece_at(&position);
 
-        if !valid_click_coordinates(logical_x, logical_y) {
-            return
-        }
-
-        let clicked_position = get_position_of_coordinates(logical_x, logical_y);
-        let piece: Piece = self.game.board.get_piece_at(&clicked_position);
-
-        if piece.get_color() == self.game.player_turn {
-            self.carry_piece.set(clicked_position, piece);
+            if piece.get_color() == self.game.player_turn {
+                self.carry_piece.set(&position, &piece);
+            }
         }
     }
 
@@ -254,27 +231,11 @@ impl EventHandler<GameError> for Engine {
             _button: event::MouseButton,
             x: f32,
             y: f32) {
-        if self.carry_piece.is_empty() {
-            return
+        if let Some(position) = get_position_of_coordinates(x, y, &self.offsets, &self.scales) {
+            if let Some(from_pos) = self.carry_piece.position() {
+                self.game.perform_move(from_pos, &position);
+            }
         }
-        
-        let logical_x: f32 = (x - self.offsets.x) / self.scales.x;
-        let logical_y: f32 = (y - self.offsets.y) / self.scales.y;
-
-        if !valid_click_coordinates(logical_x, logical_y) {
-            self.carry_piece.clear();
-            return
-        }
-
-        let clicked_position = get_position_of_coordinates(logical_x, logical_y);
-
-
-        if !self.game.valid_turn(&self.carry_piece.position(), &clicked_position) {
-            self.carry_piece.clear();
-            return
-        }
-
-        self.game.perform_move(&self.carry_piece.position(), &clicked_position);
 
         self.carry_piece.clear();
     }
@@ -286,6 +247,7 @@ impl EventHandler<GameError> for Engine {
             keycode: miniquad::KeyCode,
             _keymods: event::KeyMods,
         ) {
+        // Unimportant debug stuff
         if keycode == miniquad::KeyCode::Enter {
             self.debug = !self.debug;
             if self.debug {
@@ -294,7 +256,7 @@ impl EventHandler<GameError> for Engine {
                 self.game.board.clone()
                     .iterator_positions_and_pieces()
                     .flat_map(|(from_pos, piece)| {
-                        get_all_possible_moves(self.game.board.clone(), piece.get_color(), from_pos.clone(), true)
+                        get_all_possible_moves(&self.game.board, piece.get_color(), &from_pos, true)
                         .into_iter()
                         .map(move |to_pos| {
                             (from_pos.clone(), to_pos.clone())
@@ -305,7 +267,7 @@ impl EventHandler<GameError> for Engine {
                         })
                     }).for_each(|board| {
                         println!("{}", board.to_string());
-                        snapshot::save_state(board);
+                        snapshot::save_state(&board);
                     });
             } else {
                 self.game.board = Board::import(snapshot::exit_debug());

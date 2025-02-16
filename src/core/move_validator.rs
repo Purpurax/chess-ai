@@ -1,47 +1,47 @@
-use super::{position::Position, board::Board, piece::{Piece, PieceType}, move_generator::get_all_possible_moves, snapshot};
+use super::{position::Position, board::Board, piece::{Piece, PieceType}, move_generator::get_all_possible_moves};
 
 pub fn is_move_valid(
-        board: Board,
+        board: &Board,
         player_turn: bool,
-        from: Position,
-        to: Position,
+        from: &Position,
+        to: &Position,
         checking_check: bool
     ) -> bool {
-    if !is_position_on_board(&from)
-    || !is_position_on_board(&to)
+    if !is_position_on_board(from)
+    || !is_position_on_board(to)
     || from == to {
         return false
     }
     
-    let from_piece: Piece = board.get_piece_at(&from);
-    let to_piece: Piece = board.get_piece_at(&to);
+    let from_piece: Piece = board.get_piece_at(from);
+    let to_piece: Piece = board.get_piece_at(to);
 
     if !are_pieces_valid(&from_piece, &to_piece, player_turn) {
         return false
     }
 
-    if !is_path_clear(board.clone(), &from, &to) && from_piece.piece_type() != PieceType::Knight {
+    if !is_path_clear(board, from, to) && from_piece.piece_type() != PieceType::Knight {
         return false
     }
 
     let mut applied_board: Board = board.clone();
-    applied_board.move_from_to(&from, &to);
-    if checking_check && is_check(applied_board, !player_turn) {
+    applied_board.move_from_to(from, to);
+    if checking_check && is_check(&applied_board, !player_turn) {
         return false
     }
 
     match from_piece.piece_type() {
         PieceType::Empty => false,
-        PieceType::Pawn => is_valid_pawn_move(&to_piece, player_turn, &from, &to),
-        PieceType::Knight => is_valid_knight_move(&from, &to),
-        PieceType::Bishop => is_valid_bishop_move(&from, &to),
-        PieceType::Rook => is_valid_rook_move(&from, &to),
-        PieceType::Queen => is_valid_queen_move(&from, &to),
-        PieceType::King => is_valid_king_move(&from, &to),
+        PieceType::Pawn => is_valid_pawn_move(&to_piece, player_turn, from, to),
+        PieceType::Knight => is_valid_knight_move(from, to),
+        PieceType::Bishop => is_valid_bishop_move(from, to),
+        PieceType::Rook => is_valid_rook_move(from, to),
+        PieceType::Queen => is_valid_queen_move(from, to),
+        PieceType::King => is_valid_king_move(from, to),
     }
 }
 
-pub fn is_check(board: Board, player_turn: bool) -> bool {
+pub fn is_check(board: &Board, player_turn: bool) -> bool {
     let king_layer: u64 =
         if player_turn {
             (!board.layer_color) & board.layer_king
@@ -62,7 +62,7 @@ pub fn is_check(board: Board, player_turn: bool) -> bool {
             None
         }
     }).any(|from_pos| {
-        get_all_possible_moves(board.clone(), player_turn, from_pos, false)
+        get_all_possible_moves(&board, player_turn, &from_pos, false)
         .into_iter()
         .any(|to_pos| {
             let index: u8 = to_pos.row * 8 + to_pos.column;
@@ -71,7 +71,7 @@ pub fn is_check(board: Board, player_turn: bool) -> bool {
     })
 }
 
-pub fn is_checkmate(board: Board, player_turn: bool) -> bool {
+pub fn is_checkmate(board: &Board, player_turn: bool) -> bool {
     board.clone()
     .iterator_positions_and_pieces()
     .filter_map(|(pos, piece)| {
@@ -81,7 +81,7 @@ pub fn is_checkmate(board: Board, player_turn: bool) -> bool {
             None
         }
     }).flat_map(|from_pos| {
-        get_all_possible_moves(board.clone(), !player_turn, from_pos.clone(), true)
+        get_all_possible_moves(&board, !player_turn, &from_pos, true)
         .into_iter()
         .map(move |to_pos| {
             (from_pos.clone(), to_pos.clone())
@@ -91,7 +91,7 @@ pub fn is_checkmate(board: Board, player_turn: bool) -> bool {
         new_board.move_from_to(&from, &to);
         new_board
     }).all(|new_board| {
-        is_check(new_board, player_turn)
+        is_check(&new_board, player_turn)
     })
 }
 
@@ -105,7 +105,7 @@ pub fn is_checkmate(board: Board, player_turn: bool) -> bool {
 //  - Mutual Agreement
 //  - Threefold Repitition
 //  - 50-move rule (50 moves without a capture or pawn move)
-pub fn is_remis(board: Board, player_turn: bool) -> bool {
+pub fn is_remis(board: &Board, player_turn: bool) -> bool {
     board.clone()
     .iterator_positions_and_pieces()
     .filter_map(|(pos, piece)| {
@@ -115,7 +115,7 @@ pub fn is_remis(board: Board, player_turn: bool) -> bool {
             None
         }
     }).flat_map(|from_pos| {
-        get_all_possible_moves(board.clone(), !player_turn, from_pos.clone(), true)
+        get_all_possible_moves(&board, !player_turn, &from_pos, true)
     }).count() == 0
 }
 
@@ -132,18 +132,18 @@ fn are_pieces_valid(from_piece: &Piece, to_piece: &Piece, player_turn: bool) -> 
     )
 }
 
-fn is_path_clear(board: Board, from: &Position, to: &Position) -> bool {
+fn is_path_clear(board: &Board, from: &Position, to: &Position) -> bool {
     let layer_occupied: u64 = !board.get_empty_layer();
 
     let mut position_check: Position = from.clone();
     position_check.move_towards(&to);
 
     while position_check != *to {
-        if Board::get_layer_value_at(&layer_occupied, &position_check) {
+        if Board::get_layer_value_at(layer_occupied, &position_check) {
             return false
         }
 
-        position_check.move_towards(&to);
+        position_check.move_towards(to);
     }
 
     return true

@@ -31,10 +31,10 @@ impl Game {
         self.board.move_from_to(from, to);
         self.check = is_check(self.board.clone(), self.player_turn);
         
-        if is_checkmate(self.board.clone(), self.player_turn) {
-            return self.checkmate = true;
-        } else if is_remis(self.board.clone(), self.player_turn) {
+        if !self.check && is_remis(self.board.clone(), self.player_turn) {
             return self.remis = true;
+        } else if self.check && is_checkmate(self.board.clone(), self.player_turn) {
+            return self.checkmate = true;
         }
         println!("check: {}, checkmate: {}, player: {}", self.check, self.checkmate, self.player_turn);
 

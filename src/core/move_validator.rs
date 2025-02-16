@@ -95,8 +95,28 @@ pub fn is_checkmate(board: Board, player_turn: bool) -> bool {
     })
 }
 
+// Possible draws:
+//  - Stalemate (unchecked, without having any move left)
+//  - Dead position
+//      - King vs King
+//      - King, Bishop vs King
+//      - King, Knight vs King
+//      - King, Bishop vs King, Bishop (with the same color Bishop)
+//  - Mutual Agreement
+//  - Threefold Repitition
+//  - 50-move rule (50 moves without a capture or pawn move)
 pub fn is_remis(board: Board, player_turn: bool) -> bool {
-    false
+    board.clone()
+    .iterator_positions_and_pieces()
+    .filter_map(|(pos, piece)| {
+        if piece.get_color() != player_turn {
+            Some(pos)
+        } else {
+            None
+        }
+    }).flat_map(|from_pos| {
+        get_all_possible_moves(board.clone(), !player_turn, from_pos.clone(), true)
+    }).count() == 0
 }
 
 fn is_position_on_board(position: &Position) -> bool {

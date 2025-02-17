@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 
-use good_web_game as ggez;
-use ggez::graphics::Image;
 use ggez::cgmath::{Point2, Vector2};
+use ggez::graphics::Image;
+use good_web_game as ggez;
 
-use crate::core::{position::Position, piece::{Piece, PieceType}};
+use crate::core::{
+    piece::{Piece, PieceType},
+    position::Position,
+};
 
 fn valid_click_coordinates(x: f32, y: f32) -> bool {
     x > 0.0 && y > 0.0 && x < 1280.0 && y < 1280.0
@@ -17,12 +20,17 @@ fn get_position(x: f32, y: f32) -> Position {
     Position::new(7 - row, column)
 }
 
-pub fn get_position_of_coordinates(x: f32, y: f32, offsets: &Point2<f32>, scales: &Vector2<f32>) -> Option<Position> {
+pub fn get_position_of_coordinates(
+    x: f32,
+    y: f32,
+    offsets: &Point2<f32>,
+    scales: &Vector2<f32>,
+) -> Option<Position> {
     let logical_x: f32 = (x - offsets.x) / scales.x;
     let logical_y: f32 = (y - offsets.y) / scales.y;
 
     if !valid_click_coordinates(logical_x, logical_y) {
-        return None
+        return None;
     }
 
     Some(get_position(logical_x, logical_y))
@@ -46,7 +54,11 @@ pub fn determine_image(images: &HashMap<String, Image>, piece: &Piece) -> Option
     }
 }
 
-pub fn determine_image_position(position: &Position, offsets: &Point2<f32>, scales: &Vector2<f32>) -> Point2<f32> {
+pub fn determine_image_position(
+    position: &Position,
+    offsets: &Point2<f32>,
+    scales: &Vector2<f32>,
+) -> Point2<f32> {
     let x: f32 = offsets.x + 160.0 * scales.x * (position.column as f32);
     let y: f32 = offsets.y + 160.0 * scales.y * ((7 - position.row) as f32);
 

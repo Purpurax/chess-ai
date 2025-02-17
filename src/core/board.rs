@@ -1,6 +1,7 @@
 use crate::core::{piece::Piece, position::Position};
 
 use super::move_validator;
+use std::fmt;
 
 #[derive(Clone)]
 pub struct Board {
@@ -36,13 +37,13 @@ impl Board {
             // layer_rook:      0b1000000100000000000000000000000000000000000000000000000010000001,
             // layer_queen:     0b0000100000000000000000000000000000000000000000000000000000001000,
             // layer_king:      0b0001000000000000000000000000000000000000000000000000000000010000
-            layer_color:     0b0000000000000000000000000000000000000000000000001111111111111111,
-            layer_pawn:      0b0000000011111111000000000000000000000000000000001111111100000000,
-            layer_knight:    0b0100001000000000000000000000000000000000000000000000000001000010,
-            layer_bishop:    0b0010010000000000000000000000000000000000000000000000000000100100,
-            layer_rook:      0b1000000100000000000000000000000000000000000000000000000010000001,
-            layer_queen:     0b0000100000000000000000000000000000000000000000000000000000001000,
-            layer_king:      0b0001000000000000000000000000000000000000000000000000000000010000
+            layer_color: 0b0000000000000000000000000000000000000000000000001111111111111111,
+            layer_pawn: 0b0000000011111111000000000000000000000000000000001111111100000000,
+            layer_knight: 0b0100001000000000000000000000000000000000000000000000000001000010,
+            layer_bishop: 0b0010010000000000000000000000000000000000000000000000000000100100,
+            layer_rook: 0b1000000100000000000000000000000000000000000000000000000010000001,
+            layer_queen: 0b0000100000000000000000000000000000000000000000000000000000001000,
+            layer_king: 0b0001000000000000000000000000000000000000000000000000000000010000,
         }
     }
 
@@ -54,7 +55,7 @@ impl Board {
             layer_bishop: layers[3],
             layer_rook: layers[4],
             layer_queen: layers[5],
-            layer_king: layers[6]
+            layer_king: layers[6],
         }
     }
 
@@ -66,7 +67,7 @@ impl Board {
             self.layer_bishop,
             self.layer_rook,
             self.layer_queen,
-            self.layer_king
+            self.layer_king,
         ]
     }
 
@@ -74,26 +75,30 @@ impl Board {
         let shift_amount: u8 = position.row * 8 + position.column;
         let mask: u64 = 0b1 << shift_amount;
 
-        let mut piece: u64 = ((self.layer_color  & mask) >> shift_amount) << 6;
-        piece |= ((self.layer_pawn   & mask) >> shift_amount) << 5;
+        let mut piece: u64 = ((self.layer_color & mask) >> shift_amount) << 6;
+        piece |= ((self.layer_pawn & mask) >> shift_amount) << 5;
         piece |= ((self.layer_knight & mask) >> shift_amount) << 4;
         piece |= ((self.layer_bishop & mask) >> shift_amount) << 3;
-        piece |= ((self.layer_rook   & mask) >> shift_amount) << 2;
-        piece |= ((self.layer_queen  & mask) >> shift_amount) << 1;
-        piece | ( self.layer_king   & mask) >> shift_amount
+        piece |= ((self.layer_rook & mask) >> shift_amount) << 2;
+        piece |= ((self.layer_queen & mask) >> shift_amount) << 1;
+        piece | (self.layer_king & mask) >> shift_amount
     }
 
     fn set_position_binary(&mut self, position: &Position, binary: u64) {
         let shift_amount: u8 = position.row * 8 + position.column;
         let mask: u64 = !(0b1 << shift_amount);
 
-        self.layer_color  = (self.layer_color  & mask) | (((binary & 0b1000000) >> 6) << shift_amount);
-        self.layer_pawn   = (self.layer_pawn   & mask) | (((binary & 0b0100000) >> 5) << shift_amount);
-        self.layer_knight = (self.layer_knight & mask) | (((binary & 0b0010000) >> 4) << shift_amount);
-        self.layer_bishop = (self.layer_bishop & mask) | (((binary & 0b0001000) >> 3) << shift_amount);
-        self.layer_rook   = (self.layer_rook   & mask) | (((binary & 0b0000100) >> 2) << shift_amount);
-        self.layer_queen  = (self.layer_queen  & mask) | (((binary & 0b0000010) >> 1) << shift_amount);
-        self.layer_king   = (self.layer_king   & mask) | ((binary & 0b0000001) << shift_amount);
+        self.layer_color =
+            (self.layer_color & mask) | (((binary & 0b1000000) >> 6) << shift_amount);
+        self.layer_pawn = (self.layer_pawn & mask) | (((binary & 0b0100000) >> 5) << shift_amount);
+        self.layer_knight =
+            (self.layer_knight & mask) | (((binary & 0b0010000) >> 4) << shift_amount);
+        self.layer_bishop =
+            (self.layer_bishop & mask) | (((binary & 0b0001000) >> 3) << shift_amount);
+        self.layer_rook = (self.layer_rook & mask) | (((binary & 0b0000100) >> 2) << shift_amount);
+        self.layer_queen =
+            (self.layer_queen & mask) | (((binary & 0b0000010) >> 1) << shift_amount);
+        self.layer_king = (self.layer_king & mask) | ((binary & 0b0000001) << shift_amount);
     }
 
     pub fn get_piece_at(&self, position: &Position) -> Piece {
@@ -109,12 +114,15 @@ impl Board {
     }
 
     pub fn get_empty_layer(&self) -> u64 {
-        !(self.layer_pawn   | self.layer_knight
-        | self.layer_bishop | self.layer_rook
-        | self.layer_queen  | self.layer_king)
+        !(self.layer_pawn
+            | self.layer_knight
+            | self.layer_bishop
+            | self.layer_rook
+            | self.layer_queen
+            | self.layer_king)
     }
 
-    pub fn iterator<'a>(&'a self) -> impl Iterator<Item = u64> + 'a {
+    pub fn iterator(&self) -> impl Iterator<Item = u64> + '_ {
         (0..64).map(|i| {
             let mask: u64 = 0b1 << i;
 
@@ -124,29 +132,40 @@ impl Board {
             piece |= ((self.layer_bishop & mask) >> i) << 3;
             piece |= ((self.layer_rook & mask) >> i) << 2;
             piece |= ((self.layer_queen & mask) >> i) << 1;
-
             piece | ((self.layer_king & mask) >> i)
         })
     }
 
-    pub fn iterator_pieces<'a>(&'a self) -> impl Iterator<Item = Piece> + 'a {
-        self.iterator().map(|binary_piece| {
-            Piece::binary_to_piece(binary_piece)
-        })
+    pub fn iterator_pieces(&self) -> impl Iterator<Item = Piece> + '_ {
+        self.iterator()
+            .map(|binary_piece| Piece::binary_to_piece(binary_piece))
     }
 
-    pub fn iterator_positions_and_pieces<'a>(&'a self) -> impl Iterator<Item = (Position, Piece)> + 'a {
+    pub fn iterator_positions_and_pieces(&self) -> impl Iterator<Item = (Position, Piece)> + '_ {
         self.iterator_pieces().enumerate().map(|(i, piece)| {
             let row: u8 = i.div_euclid(8) as u8;
             let column: u8 = i.rem_euclid(8) as u8;
-            
+
             (Position::new(row, column), piece)
         })
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn is_move_valid(&self, player_turn: bool, from: &Position, to: &Position) -> bool {
+        move_validator::is_move_valid(self, player_turn, from, to, true)
+    }
+
+    pub fn move_from_to(&mut self, from: &Position, to: &Position) {
+        let binary_piece: u64 = self.get_piece_binary_at(from);
+
+        self.set_position_binary(from, 0b0);
+        self.set_position_binary(to, binary_piece);
+    }
+}
+
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut column: u8 = 0;
-        
+
         let delimiter: &str = " | ";
         let border: &str = " +---+---+---+---+---+---+---+---+ ";
 
@@ -166,17 +185,6 @@ impl Board {
         });
         result_string.push_str(border);
 
-        result_string
-    }
-
-    pub fn is_move_valid(&self, player_turn: bool, from: &Position, to: &Position) -> bool {
-        return move_validator::is_move_valid(&self, player_turn, from, to, true);
-    }
-
-    pub fn move_from_to(&mut self, from: &Position, to: &Position) {
-        let binary_piece: u64 = self.get_piece_binary_at(&from);
-
-        self.set_position_binary(from, 0b0);
-        self.set_position_binary(to, binary_piece);
+        write!(f, "{}", result_string)
     }
 }

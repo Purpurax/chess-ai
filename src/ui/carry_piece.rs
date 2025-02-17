@@ -1,15 +1,15 @@
-use crate::core::{position::Position, piece::Piece};
+use crate::core::{piece::Piece, position::Position};
 
 pub struct CarryPiece {
     grabbed_position: Option<Position>,
-    grabbed_piece: Option<Piece>
+    grabbed_piece: Option<Piece>,
 }
 
 impl CarryPiece {
     pub fn new() -> CarryPiece {
         CarryPiece {
             grabbed_position: Option::None,
-            grabbed_piece: Option::None
+            grabbed_piece: Option::None,
         }
     }
 

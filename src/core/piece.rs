@@ -7,9 +7,9 @@
 //      0b_101 = queen
 //      0b_110 = king
 //      0b_111 = unclear yet
-// 
+//
 // OR MAYBE
-// 
+//
 // Pieces use 7 bits with:
 //      0b0______ = black
 //      0b1______ = white
@@ -34,30 +34,29 @@ pub enum PieceType {
 #[derive(Clone, PartialEq)]
 pub struct Piece {
     color: bool, // 0b0 black, 0b1 white
-    piece_type: PieceType
+    piece_type: PieceType,
 }
 
 impl Piece {
     pub fn binary_to_piece(binary: u64) -> Piece {
         let color: bool = binary & 0b1000000 == 0b1000000;
-    
-        let piece_type: PieceType = 
-            if (binary & 0b0100000) == 0b0100000 {
-                PieceType::Pawn
-            } else if (binary & 0b0010000) == 0b0010000 {
-                PieceType::Knight
-            } else if (binary & 0b0001000) == 0b0001000 {
-                PieceType::Bishop
-            } else if (binary & 0b0000100) == 0b0000100 {
-                PieceType::Rook
-            } else if (binary & 0b0000010) == 0b0000010 {
-                PieceType::Queen
-            } else if (binary & 0b0000001) == 0b0000001 {
-                PieceType::King
-            } else {
-                PieceType::Empty
-            };
-    
+
+        let piece_type: PieceType = if (binary & 0b0100000) == 0b0100000 {
+            PieceType::Pawn
+        } else if (binary & 0b0010000) == 0b0010000 {
+            PieceType::Knight
+        } else if (binary & 0b0001000) == 0b0001000 {
+            PieceType::Bishop
+        } else if (binary & 0b0000100) == 0b0000100 {
+            PieceType::Rook
+        } else if (binary & 0b0000010) == 0b0000010 {
+            PieceType::Queen
+        } else if (binary & 0b0000001) == 0b0000001 {
+            PieceType::King
+        } else {
+            PieceType::Empty
+        };
+
         Piece { color, piece_type }
     }
 

@@ -1,9 +1,9 @@
-
+use std::fmt;
 
 #[derive(PartialEq, Clone)]
 pub struct Position {
     pub row: u8,
-    pub column: u8
+    pub column: u8,
 }
 
 impl Position {
@@ -24,21 +24,16 @@ impl Position {
             self.column -= 1;
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut result: String = String::from("Position { row: ");
         result.push_str(format!("{}", self.row).as_str());
         result.push_str(", column: ");
         result.push_str(format!("{}", self.column).as_str());
         result.push_str(" }");
-        result
-    }
-}
 
-impl std::ops::Sub<&Position> for &Position {
-    type Output = u8;
-
-    fn sub(self, rhs: &Position) -> u8 {
-        std::cmp::max(self.row.abs_diff(rhs.row), self.column.abs_diff(rhs.column))
+        write!(f, "{}", result)
     }
 }

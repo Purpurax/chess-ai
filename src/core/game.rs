@@ -1,25 +1,28 @@
 use crate::core::board::Board;
 
-use super::{position::Position, move_validator::{is_check, is_checkmate, is_remis}};
+use super::{
+    move_validator::{is_check, is_checkmate, is_remis},
+    position::Position,
+};
 
 pub struct Game {
     pub board: Board,
-    pub king_moved: bool,
+    // pub king_moved: bool,
     pub player_turn: bool, // false is blacks turn
     pub check: bool,
     checkmate: bool,
-    remis: bool
+    remis: bool,
 }
 
 impl Game {
     pub fn new() -> Game {
         Game {
             board: Board::new(),
-            king_moved: false,
+            // king_moved: false,
             player_turn: true,
             check: false,
             checkmate: false,
-            remis: false
+            remis: false,
         }
     }
 
@@ -29,12 +32,12 @@ impl Game {
 
     pub fn perform_move(&mut self, from: &Position, to: &Position) {
         if !self.valid_turn(from, to) {
-            return
+            return;
         }
 
         self.board.move_from_to(from, to);
         self.check = is_check(&self.board, self.player_turn);
-        
+
         if !self.check && is_remis(&self.board, self.player_turn) {
             return self.remis = true;
         } else if self.check && is_checkmate(&self.board, self.player_turn) {

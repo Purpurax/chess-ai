@@ -5,9 +5,9 @@ use super::{
     position::Position,
 };
 
+#[derive(Clone)]
 pub struct Game {
     pub board: Board,
-    // pub king_moved: bool,
     pub player_turn: bool, // false is blacks turn
     pub check: bool,
     checkmate: bool,
@@ -18,7 +18,6 @@ impl Game {
     pub fn new() -> Game {
         Game {
             board: Board::new(),
-            // king_moved: false,
             player_turn: true,
             check: false,
             checkmate: false,

@@ -6,6 +6,7 @@ use std::fmt;
 #[derive(Clone)]
 pub struct Board {
     pub layer_color: u64, // 0 is black
+    pub layer_moved: u64,
     pub layer_pawn: u64,
     pub layer_knight: u64,
     pub layer_bishop: u64,
@@ -18,7 +19,8 @@ impl Board {
     #[allow(dead_code)]
     fn zero() -> Board {
         Board {
-            layer_color: 0b0, // 0 is black
+            layer_color: 0b0,
+            layer_moved: 0b0,
             layer_pawn: 0b0,
             layer_knight: 0b0,
             layer_bishop: 0b0,
@@ -38,6 +40,7 @@ impl Board {
             // layer_queen:     0b0000100000000000000000000000000000000000000000000000000000001000,
             // layer_king:      0b0001000000000000000000000000000000000000000000000000000000010000
             layer_color: 0b0000000000000000000000000000000000000000000000001111111111111111,
+            layer_moved: 0b0000000000000000111111111111111111111111111111110000000000000000,
             layer_pawn: 0b0000000011111111000000000000000000000000000000001111111100000000,
             layer_knight: 0b0100001000000000000000000000000000000000000000000000000001000010,
             layer_bishop: 0b0010010000000000000000000000000000000000000000000000000000100100,
@@ -47,21 +50,23 @@ impl Board {
         }
     }
 
-    pub fn import(layers: [u64; 7]) -> Board {
+    pub fn import(layers: [u64; 8]) -> Board {
         Board {
             layer_color: layers[0],
-            layer_pawn: layers[1],
-            layer_knight: layers[2],
-            layer_bishop: layers[3],
-            layer_rook: layers[4],
-            layer_queen: layers[5],
-            layer_king: layers[6],
+            layer_moved: layers[1],
+            layer_pawn: layers[2],
+            layer_knight: layers[3],
+            layer_bishop: layers[4],
+            layer_rook: layers[5],
+            layer_queen: layers[6],
+            layer_king: layers[7],
         }
     }
 
-    pub fn export(&self) -> [u64; 7] {
+    pub fn export(&self) -> [u64; 8] {
         [
             self.layer_color,
+            self.layer_moved,
             self.layer_pawn,
             self.layer_knight,
             self.layer_bishop,

@@ -6,12 +6,12 @@ static mut SNAPSHOT: Snapshot = Snapshot {
 };
 
 struct Snapshot {
-    game_boards: Vec<[u64; 7]>,
+    game_boards: Vec<[u64; 8]>,
     debug_index: usize,
 }
 
 pub fn save_state(board: &Board) {
-    let layers: [u64; 7] = board.export();
+    let layers: [u64; 8] = board.export();
     unsafe {
         SNAPSHOT.game_boards.push(layers);
         // SNAPSHOT.game_boards.iter().for_each(|layers| {
@@ -30,7 +30,7 @@ pub fn enter_debug(game_state: &Game) {
     }
 }
 
-pub fn debug_left() -> [u64; 7] {
+pub fn debug_left() -> [u64; 8] {
     unsafe {
         if SNAPSHOT.debug_index != 0 {
             SNAPSHOT.debug_index -= 1;
@@ -41,7 +41,7 @@ pub fn debug_left() -> [u64; 7] {
     }
 }
 
-pub fn debug_right() -> [u64; 7] {
+pub fn debug_right() -> [u64; 8] {
     unsafe {
         if SNAPSHOT.debug_index + 1 < SNAPSHOT.game_boards.len() {
             SNAPSHOT.debug_index += 1;
@@ -50,7 +50,7 @@ pub fn debug_right() -> [u64; 7] {
         }
         if is_check(
             &Board::import(SNAPSHOT.game_boards[SNAPSHOT.debug_index]),
-            false,
+            false
         ) {
             println!("1111111111111");
         } else {
@@ -60,9 +60,9 @@ pub fn debug_right() -> [u64; 7] {
     }
 }
 
-pub fn exit_debug() -> [u64; 7] {
+pub fn exit_debug() -> [u64; 8] {
     unsafe {
-        let initial_board: [u64; 7] = SNAPSHOT.game_boards[0];
+        let initial_board: [u64; 8] = SNAPSHOT.game_boards[0];
         SNAPSHOT.game_boards = vec![];
         SNAPSHOT.debug_index = 0;
         initial_board

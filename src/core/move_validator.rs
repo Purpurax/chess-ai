@@ -10,7 +10,7 @@ pub fn is_move_valid(
     player_turn: bool,
     from: &Position,
     to: &Position,
-    checking_check: bool,
+    checking_check: bool
 ) -> bool {
     if !is_position_on_board(from) || !is_position_on_board(to) || from == to {
         return false;
@@ -120,9 +120,9 @@ pub fn is_remis(board: &Board, player_turn: bool) -> bool {
                 None
             }
         })
-        .flat_map(|from_pos| get_all_possible_moves(board, !player_turn, &from_pos, true))
-        .count()
-        == 0
+        .flat_map(|from_pos| {
+            get_all_possible_moves(board, !player_turn, &from_pos, true)
+        }).count() == 0
 }
 
 fn is_position_on_board(position: &Position) -> bool {
@@ -191,5 +191,6 @@ fn is_valid_queen_move(from: &Position, to: &Position) -> bool {
 
 fn is_valid_king_move(from: &Position, to: &Position) -> bool {
     // TODO: castling king
-    from.row.abs_diff(to.row) <= 1 && from.column.abs_diff(to.column) <= 1
+    (from.row.abs_diff(to.row) == 0 && from.column.abs_diff(to.column) == 2)
+    || from.row.abs_diff(to.row) <= 1 && from.column.abs_diff(to.column) <= 1
 }

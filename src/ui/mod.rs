@@ -168,8 +168,7 @@ impl EventHandler<GameError> for Engine {
                 self.game.player_turn,
                 carry_position,
                 true,
-            )
-            .into_iter()
+            ).into_iter()
             .for_each(|to| {
                 let image: Image =
                     if Board::get_layer_value_at(self.game.board.get_empty_layer(), &to) {
@@ -182,6 +181,25 @@ impl EventHandler<GameError> for Engine {
 
                 let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
                 let _ = graphics::draw(ctx, quad_ctx, &image, param);
+            });
+        } else {
+            self.game.board
+            .iterator_positions_and_pieces()
+            .filter(|(_, piece)| piece.get_color() == self.game.player_turn )
+            .for_each(|(pos, piece)| {
+                if get_all_possible_moves(
+                    &self.game.board,
+                    piece.get_color(),
+                    &pos,
+                    true
+                ).len() != 0 {
+                    let image: Image = self.images["outline green"].clone();
+    
+                    let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);
+    
+                    let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
+                    let _ = graphics::draw(ctx, quad_ctx, &image, param);
+                }
             });
         }
 
@@ -264,7 +282,11 @@ impl EventHandler<GameError> for Engine {
                     .clone()
                     .iterator_positions_and_pieces()
                     .flat_map(|(from_pos, piece)| {
-                        get_all_possible_moves(&self.game.board, piece.get_color(), &from_pos, true)
+                        get_all_possible_moves(
+                            &self.game.board,
+                            piece.get_color(),
+                            &from_pos,
+                            true)
                             .into_iter()
                             .map(move |to_pos| (from_pos.clone(), to_pos.clone()))
                             .map(|(from, to)| {

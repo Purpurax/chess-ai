@@ -5,9 +5,9 @@
 - empty
 - Threat board, move board
 
+clone the game and not just the board, so that the king_moved booleans and more is being transfered
 
 next todo:
-- remis https://www.chess.com/terms/draw-chess
 - castle and specials
 - queen upgrade
 -> then testing (increase snapshots capabilities with importing chess codes)

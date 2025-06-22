@@ -10,6 +10,7 @@ struct Snapshot {
     debug_index: usize,
 }
 
+#[allow(static_mut_refs)]
 pub fn save_state(board: &Board) {
     let layers: [u64; 8] = board.export();
     unsafe {
@@ -41,6 +42,7 @@ pub fn debug_left() -> [u64; 8] {
     }
 }
 
+#[allow(static_mut_refs)]
 pub fn debug_right() -> [u64; 8] {
     unsafe {
         if SNAPSHOT.debug_index + 1 < SNAPSHOT.game_boards.len() {

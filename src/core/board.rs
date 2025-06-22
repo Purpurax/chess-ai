@@ -6,7 +6,7 @@ use std::fmt;
 #[derive(Clone)]
 pub struct Board {
     pub layer_color: u64, // 0 is black
-    pub layer_moved: u64,
+    pub layer_not_moved: u64,
     pub layer_pawn: u64,
     pub layer_knight: u64,
     pub layer_bishop: u64,
@@ -20,7 +20,7 @@ impl Board {
     fn zero() -> Board {
         Board {
             layer_color: 0b0,
-            layer_moved: 0b0,
+            layer_not_moved: 0b0,
             layer_pawn: 0b0,
             layer_knight: 0b0,
             layer_bishop: 0b0,
@@ -40,7 +40,7 @@ impl Board {
             // layer_queen:     0b0000100000000000000000000000000000000000000000000000000000001000,
             // layer_king:      0b0001000000000000000000000000000000000000000000000000000000010000
             layer_color: 0b0000000000000000000000000000000000000000000000001111111111111111,
-            layer_moved: 0b0000000000000000111111111111111111111111111111110000000000000000,
+            layer_not_moved: 0b1111111111111111000000000000000000000000000000001111111111111111,
             layer_pawn: 0b0000000011111111000000000000000000000000000000001111111100000000,
             layer_knight: 0b0100001000000000000000000000000000000000000000000000000001000010,
             layer_bishop: 0b0010010000000000000000000000000000000000000000000000000000100100,
@@ -53,7 +53,7 @@ impl Board {
     pub fn import(layers: [u64; 8]) -> Board {
         Board {
             layer_color: layers[0],
-            layer_moved: layers[1],
+            layer_not_moved: layers[1],
             layer_pawn: layers[2],
             layer_knight: layers[3],
             layer_bishop: layers[4],
@@ -66,7 +66,7 @@ impl Board {
     pub fn export(&self) -> [u64; 8] {
         [
             self.layer_color,
-            self.layer_moved,
+            self.layer_not_moved,
             self.layer_pawn,
             self.layer_knight,
             self.layer_bishop,
@@ -80,7 +80,8 @@ impl Board {
         let shift_amount: u8 = position.row * 8 + position.column;
         let mask: u64 = 0b1 << shift_amount;
 
-        let mut piece: u64 = ((self.layer_color & mask) >> shift_amount) << 6;
+        let mut piece: u64 = ((self.layer_color & mask) >> shift_amount) << 7;
+        piece |= ((self.layer_not_moved & mask) >> shift_amount) << 6;
         piece |= ((self.layer_pawn & mask) >> shift_amount) << 5;
         piece |= ((self.layer_knight & mask) >> shift_amount) << 4;
         piece |= ((self.layer_bishop & mask) >> shift_amount) << 3;
@@ -94,7 +95,9 @@ impl Board {
         let mask: u64 = !(0b1 << shift_amount);
 
         self.layer_color =
-            (self.layer_color & mask) | (((binary & 0b1000000) >> 6) << shift_amount);
+            (self.layer_color & mask) | (((binary & 0b10000000) >> 7) << shift_amount);
+        self.layer_not_moved =
+            (self.layer_not_moved & mask) | (((binary & 0b1000000) >> 6) << shift_amount);
         self.layer_pawn = (self.layer_pawn & mask) | (((binary & 0b0100000) >> 5) << shift_amount);
         self.layer_knight =
             (self.layer_knight & mask) | (((binary & 0b0010000) >> 4) << shift_amount);
@@ -131,7 +134,8 @@ impl Board {
         (0..64).map(|i| {
             let mask: u64 = 0b1 << i;
 
-            let mut piece: u64 = ((self.layer_color & mask) >> i) << 6;
+            let mut piece: u64 = ((self.layer_color & mask) >> i) << 7;
+            piece |= ((self.layer_not_moved & mask) >> i) << 6;
             piece |= ((self.layer_pawn & mask) >> i) << 5;
             piece |= ((self.layer_knight & mask) >> i) << 4;
             piece |= ((self.layer_bishop & mask) >> i) << 3;
@@ -160,7 +164,8 @@ impl Board {
     }
 
     pub fn move_from_to(&mut self, from: &Position, to: &Position) {
-        let binary_piece: u64 = self.get_piece_binary_at(from);
+        let filter_not_moved: u64 = 0b10111111;
+        let binary_piece: u64 = self.get_piece_binary_at(from) & filter_not_moved;
 
         self.set_position_binary(from, 0b0);
         self.set_position_binary(to, binary_piece);

@@ -8,6 +8,24 @@ use super::{
 pub fn get_all_possible_moves(
     board: &Board,
     player_turn: bool,
+    checking_check: bool
+) -> Vec<(Position, Position)> {
+    board.iterator_positions_and_pieces()
+        .filter(|(pos, piece)| {
+            piece.piece_type() != PieceType::Empty
+            && piece.get_color() == player_turn
+        }).flat_map(|(from_pos, _)| {
+            get_possible_moves(board, player_turn, &from_pos, checking_check)
+                .into_iter()
+                .map(move |to_pos| {
+                    (from_pos.clone(), to_pos)
+                })
+        }).collect::<Vec<(Position, Position)>>()
+}
+
+pub fn get_possible_moves(
+    board: &Board,
+    player_turn: bool,
     pos: &Position,
     checking_check: bool,
 ) -> Vec<Position> {
@@ -204,8 +222,10 @@ fn get_possible_moves_king(pos: &Position) -> Vec<Position> {
         (-1, -1),
         (-1, 0),
         (-1, 1),
+        (0, -2),
         (0, -1),
         (0, 1),
+        (0, 2),
         (1, -1),
         (1, 0),
         (1, 1),

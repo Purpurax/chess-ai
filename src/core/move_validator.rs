@@ -1,6 +1,7 @@
+use crate::core::move_generator::get_possible_moves;
+
 use super::{
     board::Board,
-    move_generator::get_all_possible_moves,
     piece::{Piece, PieceType},
     position::Position,
 };
@@ -40,7 +41,7 @@ pub fn is_move_valid(
         PieceType::Bishop => is_valid_bishop_move(from, to),
         PieceType::Rook => is_valid_rook_move(from, to),
         PieceType::Queen => is_valid_queen_move(from, to),
-        PieceType::King => is_valid_king_move(from, to),
+        PieceType::King => is_valid_king_move(board.layer_not_moved, from, to),
     }
 }
 
@@ -66,7 +67,7 @@ pub fn is_check(board: &Board, player_turn: bool) -> bool {
             }
         })
         .any(|from_pos| {
-            get_all_possible_moves(board, player_turn, &from_pos, false)
+            get_possible_moves(board, player_turn, &from_pos, false)
                 .into_iter()
                 .any(|to_pos| {
                     let index: u8 = to_pos.row * 8 + to_pos.column;
@@ -87,7 +88,7 @@ pub fn is_checkmate(board: &Board, player_turn: bool) -> bool {
             }
         })
         .flat_map(|from_pos| {
-            get_all_possible_moves(board, !player_turn, &from_pos, true)
+            get_possible_moves(board, !player_turn, &from_pos, true)
                 .into_iter()
                 .map(move |to_pos| (from_pos.clone(), to_pos.clone()))
         })
@@ -121,7 +122,7 @@ pub fn is_remis(board: &Board, player_turn: bool) -> bool {
             }
         })
         .flat_map(|from_pos| {
-            get_all_possible_moves(board, !player_turn, &from_pos, true)
+            get_possible_moves(board, !player_turn, &from_pos, true)
         }).count() == 0
 }
 
@@ -189,8 +190,12 @@ fn is_valid_queen_move(from: &Position, to: &Position) -> bool {
         || from.column == to.column
 }
 
-fn is_valid_king_move(from: &Position, to: &Position) -> bool {
-    // TODO: castling king
-    (from.row.abs_diff(to.row) == 0 && from.column.abs_diff(to.column) == 2)
+fn is_valid_king_move(layer_not_moved: u64, from: &Position, to: &Position) -> bool {
+    let king_not_moved: bool = Board::get_layer_value_at(layer_not_moved, from);
+    let rook_not_moved: bool =
+        from.column < to.column && Board::get_layer_value_at(layer_not_moved, &Position { row: from.row, column: 7 })
+        || from.column > to.column && Board::get_layer_value_at(layer_not_moved, &Position { row: from.row, column: 0 });
+    
+    king_not_moved && rook_not_moved && from.row.abs_diff(to.row) == 0 && from.column.abs_diff(to.column) == 2
     || from.row.abs_diff(to.row) <= 1 && from.column.abs_diff(to.column) <= 1
 }

@@ -5,15 +5,16 @@ use ggez::cgmath::{Point2, Vector2};
 use ggez::event::EventHandler;
 use ggez::graphics::{DrawParam, Image, Rect};
 use ggez::{event, graphics, Context, GameError, GameResult};
-use good_web_game as ggez;
+use good_web_game::{self as ggez, timer};
 use good_web_game::graphics::Color;
 
 use miniquad::GraphicsContext;
 use std::collections::HashMap;
 
+use crate::agent::{Agent, AgentType};
 use crate::core::board::Board;
 use crate::core::game::Game;
-use crate::core::move_generator::get_all_possible_moves;
+use crate::core::move_generator::get_possible_moves;
 use crate::core::piece::Piece;
 use crate::core::position::Position;
 use crate::core::snapshot;
@@ -21,6 +22,8 @@ use crate::ui::logic::get_position_of_coordinates;
 
 use self::carry_piece::CarryPiece;
 use self::logic::{determine_image, determine_image_position};
+
+const COOLDOWN_TIME: f64 = 0.2;
 
 pub struct Engine {
     game: Game,
@@ -30,12 +33,21 @@ pub struct Engine {
     scales: Vector2<f32>,
 
     carry_piece: CarryPiece,
+    cooldown_until: f64,
+
+    white_agent: Option<Agent>,
+    black_agent: Option<Agent>,
 
     debug: bool,
 }
 
 impl Engine {
-    pub fn new(ctx: &mut Context, quad_ctx: &mut GraphicsContext) -> GameResult<Engine> {
+    pub fn new(
+        ctx: &mut Context,
+        quad_ctx: &mut GraphicsContext,
+        white_agent_type: Option<AgentType>,
+        black_agent_type: Option<AgentType>
+    ) -> GameResult<Engine> {
         let game: Game = Game::new();
 
         let images: HashMap<String, Image> = Engine::load_images(ctx, quad_ctx);
@@ -45,6 +57,16 @@ impl Engine {
         let scales: Vector2<f32> = Engine::calculate_scale(window_width, window_height);
 
         let carry_piece: CarryPiece = CarryPiece::new();
+        let cooldown_until: f64 = timer::time();
+
+        let white_agent: Option<Agent> = match white_agent_type {
+            Some(val) => Some(Agent::new(val, &game, 1.0)),
+            None => None
+        };
+        let black_agent: Option<Agent> = match black_agent_type {
+            Some(val) => Some(Agent::new(val, &game, 1.0)),
+            None => None
+        };
 
         Ok(Engine {
             game,
@@ -52,6 +74,9 @@ impl Engine {
             offsets,
             scales,
             carry_piece,
+            cooldown_until,
+            white_agent,
+            black_agent,
             debug: false,
         })
     }
@@ -106,15 +131,41 @@ impl Engine {
 
         Vector2::new(scale, scale)
     }
+
+    fn perform_move(&mut self, from_pos: &Position, to_pos: &Position) {
+        self.game.perform_move(from_pos, to_pos);
+
+        if let Some(white_agent) = &mut self.white_agent {
+            white_agent.inform_about_move(from_pos, to_pos);
+        }
+        if let Some(black_agent) = &mut self.black_agent {
+            black_agent.inform_about_move(from_pos, to_pos);
+        }
+
+        self.cooldown_until = timer::time() + COOLDOWN_TIME;
+    }
 }
 
 impl EventHandler<GameError> for Engine {
     fn update(&mut self, _ctx: &mut Context, _quad_ctx: &mut GraphicsContext) -> GameResult {
+        if timer::time() < self.cooldown_until {
+            return Ok(())
+        }
+
         if self.game.get_winner().is_some() {
             match self.game.get_winner().unwrap() {
                 0 => println!("Black has won the game !!!"),
                 1 => println!("White has won the game !!!"),
                 _ => println!("Remis"),
+            }
+        } else {
+            if self.game.player_turn && self.white_agent.is_some() {
+                let agent_move: (Position, Position) = self.white_agent.clone().unwrap().get_next_turn();
+                self.perform_move(&agent_move.0, &agent_move.1);
+            }
+            if !self.game.player_turn && self.black_agent.is_some() {
+                let agent_move: (Position, Position) = self.black_agent.clone().unwrap().get_next_turn();
+                self.perform_move(&agent_move.0, &agent_move.1);
             }
         }
 
@@ -163,7 +214,7 @@ impl EventHandler<GameError> for Engine {
 
         /* Possible moves and takes */
         if let Some(carry_position) = self.carry_piece.position() {
-            get_all_possible_moves(
+            get_possible_moves(
                 &self.game.board,
                 self.game.player_turn,
                 carry_position,
@@ -187,7 +238,7 @@ impl EventHandler<GameError> for Engine {
             .iterator_positions_and_pieces()
             .filter(|(_, piece)| piece.get_color() == self.game.player_turn )
             .for_each(|(pos, piece)| {
-                if get_all_possible_moves(
+                if get_possible_moves(
                     &self.game.board,
                     piece.get_color(),
                     &pos,
@@ -255,12 +306,18 @@ impl EventHandler<GameError> for Engine {
         x: f32,
         y: f32,
     ) {
-        if let Some(position) = get_position_of_coordinates(x, y, &self.offsets, &self.scales) {
-            if let Some(from_pos) = self.carry_piece.position() {
-                self.game.perform_move(from_pos, &position);
-            }
+        if self.game.player_turn && self.white_agent.is_some()
+        || !self.game.player_turn && self.black_agent.is_some() {
+            self.carry_piece.clear();
+            return
         }
 
+        if let Some(position) = get_position_of_coordinates(x, y, &self.offsets, &self.scales) {
+            if let Some(from_pos) = self.carry_piece.position() {
+                self.perform_move(&from_pos.clone(), &position);
+            }
+        }
+        
         self.carry_piece.clear();
     }
 
@@ -282,7 +339,7 @@ impl EventHandler<GameError> for Engine {
                     .clone()
                     .iterator_positions_and_pieces()
                     .flat_map(|(from_pos, piece)| {
-                        get_all_possible_moves(
+                        get_possible_moves(
                             &self.game.board,
                             piece.get_color(),
                             &from_pos,

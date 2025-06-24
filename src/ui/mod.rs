@@ -328,37 +328,36 @@ impl EventHandler<GameError> for Engine {
         _keymods: event::KeyMods,
     ) {
         // Unimportant debug stuff
-        if keycode == miniquad::KeyCode::Enter {
-            self.debug = !self.debug;
-            if self.debug {
-                snapshot::enter_debug(&self.game);
+        // if keycode == miniquad::KeyCode::Enter {
+        //     self.debug = !self.debug;
+        //     if self.debug {
+        //         snapshot::enter_debug(&self.game);
 
-                self.game
-                    .board
-                    .clone()
-                    .iterator_positions_and_pieces()
-                    .flat_map(|(from_pos, piece)| {
-                        get_possible_moves(
-                            &self.game.board,
-                            piece.get_color(),
-                            &from_pos,
-                            true)
-                            .into_iter()
-                            .map(move |to_pos| (from_pos.clone(), to_pos.clone()))
-                            .map(|(from, to)| {
-                                let mut new_board: Board = self.game.board.clone();
-                                new_board.move_from_to(&from, &to);
-                                new_board
-                            })
-                    })
-                    .for_each(|board| {
-                        println!("{}", board);
-                        snapshot::save_state(&board);
-                    });
-            } else {
-                self.game.board = Board::import(snapshot::exit_debug());
-            }
-        }
+        //         self.game
+        //             .board
+        //             .clone()
+        //             .iterator_positions_and_pieces()
+        //             .flat_map(|(from_pos, piece)| {
+        //                 get_possible_moves(
+        //                     &self.game.board,
+        //                     piece.get_color(),
+        //                     from_pos.clone(),
+        //                     true)
+        //                     .map(move |to_pos| (from_pos.clone(), to_pos.clone()))
+        //                     .map(|(from, to)| {
+        //                         let mut new_board: Board = self.game.board.clone();
+        //                         new_board.move_from_to(&from, &to);
+        //                         new_board
+        //                     })
+        //             })
+        //             .for_each(|board| {
+        //                 println!("{}", board);
+        //                 snapshot::save_state(&board);
+        //             });
+        //     } else {
+        //         self.game.board = Board::import(snapshot::exit_debug());
+        //     }
+        // }
 
         if !self.debug {
             return;

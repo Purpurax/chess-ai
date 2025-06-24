@@ -1,9 +1,7 @@
 use crate::core::move_generator::get_possible_moves;
 
 use super::{
-    board::Board,
-    piece::{Piece, PieceType},
-    position::Position,
+    board::Board, move_generator::{get_all_possible_moves, has_possible_move}, piece::{Piece, PieceType}, position::Position
 };
 
 pub fn is_move_valid(

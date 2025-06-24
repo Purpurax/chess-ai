@@ -1,8 +1,8 @@
-use std::{cmp::{max, min}, isize, ops::Add};
+use std::{cmp::{max, min}, isize};
 
 use good_web_game::timer;
 
-use crate::core::{board::Board, game::Game, move_generator::get_all_possible_moves, piece::{Piece, PieceType}, position::Position};
+use crate::core::{board::Board, game::Game, move_generator::get_all_possible_moves, position::Position};
 
 type Move = (Position, Position);
 

@@ -25,4 +25,4 @@ It is bad because of the random selection as that makes the agent not being able
 - create new agent
 
 ### en pasant
-This rule is not being considered as it complicated the code for no reason.
+This rule is not being considered as it complicates the code for no reason.

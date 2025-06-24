@@ -11,6 +11,21 @@ impl Position {
         Position { row, column }
     }
 
+    pub fn from_usize(index: usize) -> Position {
+        let row: u8 = index.div_euclid(8) as u8;
+        let column: u8 = index.rem_euclid(8) as u8;
+        
+        Position::new(row, column)
+    }
+
+    pub fn as_u8(&self) -> u8 {
+        self.row * 8 + self.column
+    }
+
+    pub fn as_u32(&self) -> u32 {
+        (self.row * 8 + self.column) as u32
+    }
+
     pub fn move_towards(&mut self, new_position: &Position) {
         if self.row < new_position.row {
             self.row += 1;

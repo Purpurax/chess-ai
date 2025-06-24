@@ -26,10 +26,13 @@ pub fn is_move_valid(
         return false;
     }
 
-    let mut applied_board: Board = board.clone();
-    applied_board.move_from_to(from, to);
-    if checking_check && is_check(&applied_board, !player_turn) {
-        return false;
+    if checking_check {
+        let mut applied_board: Board = board.clone();
+        applied_board.move_from_to(from, to);
+
+        if is_check(&applied_board, !player_turn) {
+            return false;
+        }
     }
 
     match from_piece.piece_type() {
@@ -54,9 +57,7 @@ pub fn is_check(board: &Board, player_turn: bool) -> bool {
     }
     let king_index: u32 = king_layer.ilog2();
 
-    board
-        .clone()
-        .iterator_positions_and_pieces()
+    board.iterator_positions_and_pieces()
         .filter_map(|(pos, piece)| {
             if piece.get_color() == player_turn {
                 Some(pos)
@@ -68,8 +69,7 @@ pub fn is_check(board: &Board, player_turn: bool) -> bool {
             get_possible_moves(board, player_turn, &from_pos, false)
                 .into_iter()
                 .any(|to_pos| {
-                    let index: u8 = to_pos.row * 8 + to_pos.column;
-                    king_index == index as u32
+                    king_index == to_pos.as_u32()
                 })
         })
 }

@@ -6,21 +6,18 @@ use crate::core::{board::Board, game::Game, move_generator::get_all_possible_mov
 
 type Move = (Position, Position);
 
-pub fn get_turn(game: &Game, max_compute_time_ms: f64) -> (Position, Position) {
+pub fn get_turn(game: &Game, max_compute_time: f64) -> (Position, Position) {
+    let maximizing_player: bool = game.player_turn;
     let now: f64 = timer::time();
     let mut depth: usize = 0;
 
     let mut best_move_total = None;
-    let mut best_score_total = if game.player_turn { isize::MIN } else { isize::MAX };
+    let mut best_score_total = if maximizing_player { isize::MIN } else { isize::MAX };
     let mut last_depth_time_elapsed: f64 = 0.0;
 
     'outer_loop: loop {
-        // if depth == maximum_depth {
-        //     break;
-        // }
-        
         let mut best_move = None;
-        let mut best_score = if game.player_turn { isize::MIN } else { isize::MAX };
+        let mut best_score = if maximizing_player { isize::MIN } else { isize::MAX };
     
         for (move_used, future_game) in get_all_game_states_with_move(game) {
             let score = minimax(
@@ -28,17 +25,16 @@ pub fn get_turn(game: &Game, max_compute_time_ms: f64) -> (Position, Position) {
                 depth,
                 isize::MIN,
                 isize::MAX,
-                !game.player_turn,
-                now + max_compute_time_ms
+                now + max_compute_time
             );
             if score.is_none() {
                 break 'outer_loop;
             }
 
-            if game.player_turn && score.unwrap() >= best_score {
+            if maximizing_player && score.unwrap() >= best_score {
                 best_move = Some(move_used);
                 best_score = score.unwrap();
-            } else if !game.player_turn && score.unwrap() <= best_score {
+            } else if !maximizing_player && score.unwrap() <= best_score {
                 best_move = Some(move_used);
                 best_score = score.unwrap();
             }
@@ -60,7 +56,6 @@ pub fn minimax(
     depth: usize,
     mut alpha: isize,
     mut beta: isize,
-    maximizing_player: bool,
     stop_time: f64
 ) -> Option<isize> {
     if timer::time() > stop_time {
@@ -79,12 +74,13 @@ pub fn minimax(
     }
 
     let games_after_one_move = get_all_game_states_after_move(game);
+    let maximizing_player: bool = game.player_turn;
 
     if maximizing_player {
         let mut max_eval = isize::MIN + game.step_counter as isize;
 
         for future_game in games_after_one_move {
-            let eval = minimax(&future_game, depth - 1, alpha, beta, !maximizing_player, stop_time);
+            let eval = minimax(&future_game, depth - 1, alpha, beta, stop_time);
             eval?;
             max_eval = max(max_eval, eval.unwrap());
 
@@ -95,10 +91,10 @@ pub fn minimax(
         }
         Some(max_eval)
     } else {
-        let mut min_eval = isize::MIN + game.step_counter as isize;
+        let mut min_eval = isize::MIN - game.step_counter as isize;
 
         for future_game in games_after_one_move {
-            let eval = minimax(&future_game, depth - 1, alpha, beta, !maximizing_player, stop_time);
+            let eval = minimax(&future_game, depth - 1, alpha, beta, stop_time);
             eval?;
             min_eval = min(min_eval, eval.unwrap());
 

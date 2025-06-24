@@ -11,7 +11,7 @@ pub fn get_all_possible_moves(
     checking_check: bool
 ) -> Vec<(Position, Position)> {
     board.iterator_positions_and_pieces()
-        .filter(|(pos, piece)| {
+        .filter(|(_pos, piece)| {
             piece.piece_type() != PieceType::Empty
             && piece.get_color() == player_turn
         }).flat_map(|(from_pos, _)| {
@@ -68,101 +68,69 @@ pub fn has_possible_moves(
 }
 
 fn get_possible_moves_pawn(pos: &Position) -> Vec<Position> {
-    [
-        (-2, 0),
-        (-1, -1),
-        (-1, 0),
-        (-1, 1),
-        (1, -1),
-        (1, 0),
-        (1, 1),
-        (2, 0),
+    vec![
+        Position::new(pos.row.saturating_sub(2), pos.column),
+        Position::new(pos.row.saturating_sub(1), pos.column.saturating_sub(1)),
+        Position::new(pos.row.saturating_sub(1), pos.column),
+        Position::new(pos.row.saturating_sub(1), pos.column + 1),
+        Position::new(pos.row + 1, pos.column.saturating_sub(1)),
+        Position::new(pos.row + 1, pos.column),
+        Position::new(pos.row + 1, pos.column + 1),
+        Position::new(pos.row + 2, pos.column),
     ]
-    .into_iter()
-    .filter_map(|(row_mod, column_mod)| {
-        if (row_mod == -2 && pos.row <= 1)
-            || (row_mod == -1 && pos.row == 0)
-            || (row_mod == 1 && pos.row == 7)
-            || (row_mod == 2 && pos.row >= 6)
-            || (column_mod == -1 && pos.column == 0)
-            || (column_mod == 1 && pos.column == 7)
-        {
-            None
-        } else {
-            Some(Position::new(
-                (pos.row as i8 + row_mod) as u8,
-                (pos.column as i8 + column_mod) as u8,
-            ))
-        }
-    })
-    .collect()
 }
 
 fn get_possible_moves_knight(pos: &Position) -> Vec<Position> {
-    [
-        (-2, -1),
-        (-2, 1),
-        (-1, -2),
-        (-1, 2),
-        (1, -2),
-        (1, 2),
-        (2, -1),
-        (2, 1),
+    vec![
+        Position::new(pos.row.saturating_sub(2), pos.column.saturating_sub(1)),
+        Position::new(pos.row.saturating_sub(2), pos.column + 1),
+        Position::new(pos.row.saturating_sub(1), pos.column.saturating_sub(2)),
+        Position::new(pos.row.saturating_sub(1), pos.column + 2),
+        Position::new(pos.row + 1, pos.column.saturating_sub(2)),
+        Position::new(pos.row + 1, pos.column + 2),
+        Position::new(pos.row + 2, pos.column.saturating_sub(1)),
+        Position::new(pos.row + 2, pos.column + 1),
     ]
-    .iter()
-    .filter_map(|(row_mod, column_mod)| {
-        if (*row_mod == -2 && pos.row <= 1)
-            || (*row_mod == -1 && pos.row == 0)
-            || (*row_mod == 1 && pos.row == 7)
-            || (*row_mod == 2 && pos.row >= 6)
-            || (*column_mod == -2 && pos.column <= 1)
-            || (*column_mod == -1 && pos.column == 0)
-            || (*column_mod == 1 && pos.column == 7)
-            || (*column_mod == 2 && pos.column >= 6)
-        {
-            None
-        } else {
-            Some(Position::new(
-                (pos.row as i8 + *row_mod) as u8,
-                (pos.column as i8 + *column_mod) as u8,
-            ))
-        }
-    })
-    .collect()
 }
 
 fn get_possible_moves_bishop(pos: &Position) -> Vec<Position> {
-    let mut moves: Vec<Position> = vec![];
-    let mut t_row: u8 = pos.row;
-    let mut t_column: u8 = pos.column;
-    while t_row != 0 && t_column != 0 {
-        t_row -= 1;
-        t_column -= 1;
-        moves.push(Position::new(t_row, t_column));
-    }
-    t_row = pos.row;
-    t_column = pos.column;
-    while t_row != 0 && t_column != 7 {
-        t_row -= 1;
-        t_column += 1;
-        moves.push(Position::new(t_row, t_column));
-    }
-    t_row = pos.row;
-    t_column = pos.column;
-    while t_row != 7 && t_column != 0 {
-        t_row += 1;
-        t_column -= 1;
-        moves.push(Position::new(t_row, t_column));
-    }
-    t_row = pos.row;
-    t_column = pos.column;
-    while t_row != 7 && t_column != 7 {
-        t_row += 1;
-        t_column += 1;
-        moves.push(Position::new(t_row, t_column));
-    }
-
-    moves
+    vec![
+        // Top-left diagonal
+        Position::new(pos.row.saturating_sub(1), pos.column.saturating_sub(1)),
+        Position::new(pos.row.saturating_sub(2), pos.column.saturating_sub(2)),
+        Position::new(pos.row.saturating_sub(3), pos.column.saturating_sub(3)),
+        Position::new(pos.row.saturating_sub(4), pos.column.saturating_sub(4)),
+        Position::new(pos.row.saturating_sub(5), pos.column.saturating_sub(5)),
+        Position::new(pos.row.saturating_sub(6), pos.column.saturating_sub(6)),
+        Position::new(pos.row.saturating_sub(7), pos.column.saturating_sub(7)),
+        
+        // Top-right diagonal
+        Position::new(pos.row.saturating_sub(1), pos.column + 1),
+        Position::new(pos.row.saturating_sub(2), pos.column + 2),
+        Position::new(pos.row.saturating_sub(3), pos.column + 3),
+        Position::new(pos.row.saturating_sub(4), pos.column + 4),
+        Position::new(pos.row.saturating_sub(5), pos.column + 5),
+        Position::new(pos.row.saturating_sub(6), pos.column + 6),
+        Position::new(pos.row.saturating_sub(7), pos.column + 7),
+        
+        // Bottom-left diagonal
+        Position::new(pos.row + 1, pos.column.saturating_sub(1)),
+        Position::new(pos.row + 2, pos.column.saturating_sub(2)),
+        Position::new(pos.row + 3, pos.column.saturating_sub(3)),
+        Position::new(pos.row + 4, pos.column.saturating_sub(4)),
+        Position::new(pos.row + 5, pos.column.saturating_sub(5)),
+        Position::new(pos.row + 6, pos.column.saturating_sub(6)),
+        Position::new(pos.row + 7, pos.column.saturating_sub(7)),
+        
+        // Bottom-right diagonal
+        Position::new(pos.row + 1, pos.column + 1),
+        Position::new(pos.row + 2, pos.column + 2),
+        Position::new(pos.row + 3, pos.column + 3),
+        Position::new(pos.row + 4, pos.column + 4),
+        Position::new(pos.row + 5, pos.column + 5),
+        Position::new(pos.row + 6, pos.column + 6),
+        Position::new(pos.row + 7, pos.column + 7),
+    ]
 }
 
 fn get_possible_moves_rook(pos: &Position) -> Vec<Position> {
@@ -187,85 +155,25 @@ fn get_possible_moves_rook(pos: &Position) -> Vec<Position> {
 }
 
 fn get_possible_moves_queen(pos: &Position) -> Vec<Position> {
-    let mut moves: Vec<Position> = vec![];
-    let mut t_row: u8 = pos.row;
-    let mut t_column: u8 = pos.column;
-    while t_row != 0 && t_column != 0 {
-        t_row -= 1;
-        t_column -= 1;
-        moves.push(Position::new(t_row, t_column));
-    }
-    t_row = pos.row;
-    t_column = pos.column;
-    while t_row != 0 && t_column != 7 {
-        t_row -= 1;
-        t_column += 1;
-        moves.push(Position::new(t_row, t_column));
-    }
-    t_row = pos.row;
-    t_column = pos.column;
-    while t_row != 7 && t_column != 0 {
-        t_row += 1;
-        t_column -= 1;
-        moves.push(Position::new(t_row, t_column));
-    }
-    t_row = pos.row;
-    t_column = pos.column;
-    while t_row != 7 && t_column != 7 {
-        t_row += 1;
-        t_column += 1;
-        moves.push(Position::new(t_row, t_column));
-    }
-
-    moves.extend([
-        Position::new(0, pos.column),
-        Position::new(1, pos.column),
-        Position::new(2, pos.column),
-        Position::new(3, pos.column),
-        Position::new(4, pos.column),
-        Position::new(5, pos.column),
-        Position::new(6, pos.column),
-        Position::new(7, pos.column),
-        Position::new(pos.row, 0),
-        Position::new(pos.row, 1),
-        Position::new(pos.row, 2),
-        Position::new(pos.row, 3),
-        Position::new(pos.row, 4),
-        Position::new(pos.row, 5),
-        Position::new(pos.row, 6),
-        Position::new(pos.row, 7),
-    ]);
-
-    moves
+    let mut bishop_moves = get_possible_moves_bishop(pos);
+    let mut rook_moves = get_possible_moves_rook(pos);
+    
+    bishop_moves.append(&mut rook_moves);
+    bishop_moves
 }
 
 fn get_possible_moves_king(pos: &Position) -> Vec<Position> {
-    [
-        (-1, -1),
-        (-1, 0),
-        (-1, 1),
-        (0, -2),
-        (0, -1),
-        (0, 1),
-        (0, 2),
-        (1, -1),
-        (1, 0),
-        (1, 1),
+    vec![
+        Position::new(pos.row.saturating_sub(1), pos.column.saturating_sub(1)),
+        Position::new(pos.row.saturating_sub(1), pos.column),
+        Position::new(pos.row.saturating_sub(1), pos.column + 1),
+        Position::new(pos.row, pos.column.saturating_sub(1)),
+        Position::new(pos.row, pos.column + 1),
+        Position::new(pos.row + 1, pos.column.saturating_sub(1)),
+        Position::new(pos.row + 1, pos.column),
+        Position::new(pos.row + 1, pos.column + 1),
+        
+        Position::new(pos.row, pos.column.saturating_sub(2)),
+        Position::new(pos.row, pos.column + 2),
     ]
-    .iter()
-    .filter_map(|(row_mod, column_mod)| {
-        if (*row_mod == -1 && pos.row == 0)
-            || (*row_mod == 1 && pos.row == 7)
-            || (*column_mod == -1 && pos.column == 0)
-            || (*column_mod == 1 && pos.column == 7)
-        {
-            None
-        } else {
-            Some(Position::new(
-                (pos.row as i8 + *row_mod) as u8,
-                (pos.column as i8 + *column_mod) as u8,
-            ))
-        }
-    })
-    .collect()
 }

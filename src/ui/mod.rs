@@ -225,23 +225,23 @@ impl EventHandler<GameError> for Engine {
             });
         } else {
             self.game.board
-            .iterator_positions_and_pieces()
-            .filter(|(_, piece)| piece.get_color() == self.game.player_turn )
-            .for_each(|(pos, piece)| {
-                if get_possible_moves(
-                    &self.game.board,
-                    piece.get_color(),
-                    &pos,
-                    true
-                ).into_iter().peekable().peek().is_some() {
-                    let image: Image = self.images["outline green"].clone();
-    
-                    let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);
-    
-                    let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
-                    let _ = graphics::draw(ctx, quad_ctx, &image, param);
-                }
-            });
+                .iterator_positions_and_pieces()
+                .filter(|(_, piece)| piece.get_color() == self.game.player_turn )
+                .for_each(|(pos, piece)| {
+                    if get_possible_moves(
+                        &self.game.board,
+                        piece.get_color(),
+                        &pos,
+                        true
+                    ).into_iter().peekable().peek().is_some() {
+                        let image: Image = self.images["outline green"].clone();
+        
+                        let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);
+        
+                        let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
+                        let _ = graphics::draw(ctx, quad_ctx, &image, param);
+                    }
+                });
         }
 
         /* Grabbed Piece */

@@ -1,6 +1,6 @@
 use crate::core::{piece::Piece, position::Position};
 
-use super::move_validator;
+use super::{move_validator, piece::PieceType};
 use std::fmt;
 
 #[derive(Clone)]
@@ -77,7 +77,7 @@ impl Board {
     }
 
     fn get_piece_binary_at(&self, position: &Position) -> u64 {
-        let shift_amount: u8 = position.row * 8 + position.column;
+        let shift_amount: u8 = position.as_u8();
         let mask: u64 = 0b1 << shift_amount;
 
         let mut piece: u64 = ((self.layer_color & mask) >> shift_amount) << 7;
@@ -91,7 +91,7 @@ impl Board {
     }
 
     fn set_position_binary(&mut self, position: &Position, binary: u64) {
-        let shift_amount: u8 = position.row * 8 + position.column;
+        let shift_amount: u8 = position.as_u8();
         let mask: u64 = !(0b1 << shift_amount);
 
         self.layer_color =
@@ -115,7 +115,7 @@ impl Board {
     }
 
     pub fn get_layer_value_at(layer: u64, position: &Position) -> bool {
-        let shift_amount: u8 = position.row * 8 + position.column;
+        let shift_amount: u8 = position.as_u8();
         let mask: u64 = 0b1 << shift_amount;
 
         (layer & mask) == mask
@@ -130,7 +130,7 @@ impl Board {
             | self.layer_king)
     }
 
-    pub fn iterator(&self) -> impl Iterator<Item = u64> + '_ {
+    pub fn iterator_pieces(&self) -> impl Iterator<Item = Piece> + '_ {
         (0..64).map(|i| {
             let mask: u64 = 0b1 << i;
 
@@ -142,19 +142,32 @@ impl Board {
             piece |= ((self.layer_rook & mask) >> i) << 2;
             piece |= ((self.layer_queen & mask) >> i) << 1;
             piece | ((self.layer_king & mask) >> i)
-        })
-    }
-
-    pub fn iterator_pieces(&self) -> impl Iterator<Item = Piece> + '_ {
-        self.iterator().map(Piece::binary_to_piece)
+        }).map(Piece::binary_to_piece)
     }
 
     pub fn iterator_positions_and_pieces(&self) -> impl Iterator<Item = (Position, Piece)> + '_ {
-        self.iterator_pieces().enumerate().map(|(i, piece)| {
-            let row: u8 = i.div_euclid(8) as u8;
-            let column: u8 = i.rem_euclid(8) as u8;
+        (0..64).map(|i| {
+            let mask: u64 = 0b1 << i;
 
-            (Position::new(row, column), piece)
+            let color: bool = self.layer_color & mask != 0;
+
+            let piece_type: PieceType = if (self.layer_pawn & mask) != 0 {
+                PieceType::Pawn
+            } else if (self.layer_knight & mask) != 0 {
+                PieceType::Knight
+            } else if (self.layer_bishop & mask) != 0 {
+                PieceType::Bishop
+            } else if (self.layer_rook & mask) != 0 {
+                PieceType::Rook
+            } else if (self.layer_queen & mask) != 0 {
+                PieceType::Queen
+            } else if (self.layer_king & mask) != 0 {
+                PieceType::King
+            } else {
+                PieceType::Empty
+            };
+
+            (Position::from_usize(i), Piece::new(color, piece_type))
         })
     }
 

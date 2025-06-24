@@ -2,7 +2,9 @@ use core::f64;
 use good_web_game::timer;
 use rand::seq::IndexedRandom;
 
-use crate::{agent::random, core::{game::Game, move_generator::get_all_possible_moves, position::Position}};
+use crate::{agent::random, core::{board::Board, game::Game, move_generator::get_all_possible_moves, position::Position}};
+
+const EXPLORATION_C: f64 = 1.5;
 
 #[derive(Clone)]
 pub struct Tree {
@@ -46,7 +48,7 @@ pub struct Node {
     pub children: Vec<usize>,
     pub termination_node: bool,
     pub total_visits: usize,
-    pub wins: usize
+    pub score: f64
 }
 
 impl Node {
@@ -57,7 +59,7 @@ impl Node {
             children: vec![],
             termination_node: false,
             total_visits: 1,
-            wins: 0
+            score: 0.0
         }
     }
 
@@ -68,13 +70,10 @@ impl Node {
             children: vec![],
             termination_node: false,
             total_visits: 1,
-            wins: 0
+            score: 0.0
         }
     }
 }
-
-const EPSILON: f64 = 0.2;
-const EXPLORATION_C: f64 = 2.0;
 
 pub fn get_turn(initial_game: &Game, tree: &mut Tree, max_compute_time: f64) -> (Position, Position) {
     if initial_game.player_turn != tree.color || tree.get_root_node().children.is_empty() {
@@ -92,12 +91,7 @@ pub fn get_turn(initial_game: &Game, tree: &mut Tree, max_compute_time: f64) -> 
 
         /* Selection */
         while !tree.get_node(node_index).children.is_empty() && !tree.get_node(node_index).termination_node {
-            if rand::random::<f64>() % 1.0 < EPSILON {
-                node_index = *tree.get_node(node_index).children.choose(&mut rand::rng()).unwrap();
-            } else {
-                node_index = *tree.get_node(node_index).children
-                    .get(greedy_selection(tree, node_index)).unwrap();
-            }
+            node_index = *tree.get_node(node_index).children.get(ucb_selection(tree, node_index)).unwrap();
 
             simulation.perform_move(
                 &tree.get_node(node_index).edge_to_this_node.clone().unwrap().0,
@@ -130,13 +124,11 @@ pub fn get_turn(initial_game: &Game, tree: &mut Tree, max_compute_time: f64) -> 
         }
 
         /* Backpropagation */
-        let is_win: bool = evaluate_simulation(&simulation, playing_for);
+        let reward: f64 = evaluate_simulation(&simulation, playing_for);
         let mut propagation_node: Option<usize> = Some(node_index);
         
         while let Some(propagation_node_index) = propagation_node {
-            if is_win {
-                tree.get_node_mut(propagation_node_index).wins += 1;
-            }
+            tree.get_node_mut(propagation_node_index).score += reward;
             tree.get_node_mut(propagation_node_index).total_visits += 1;
             propagation_node = tree.get_node(propagation_node_index).parent;
         }
@@ -149,43 +141,79 @@ pub fn get_turn(initial_game: &Game, tree: &mut Tree, max_compute_time: f64) -> 
 
     println!("\nMonte-Carlo:\n > Execution time {:.3?}\n > best score {}\n > nodes simulated: {}",
         timer::time() - time_for_stop + max_compute_time,
-        calculate_node_score(greedy_node, tree.get_root_node().total_visits),
+        greedy_score(greedy_node),
         tree.get_root_node().total_visits
     );
     greedy_node.edge_to_this_node.clone().unwrap()
 }
 
-fn calculate_node_score(node: &Node, total_tree_visits: usize) -> f64 {
-    node.wins as f64 / node.total_visits as f64
+fn ucb_score(node: &Node, total_tree_visits: usize) -> f64 {
+    node.score / node.total_visits as f64
     + EXPLORATION_C * ((total_tree_visits as f64).ln() / node.total_visits as f64).sqrt()
 }
 
-fn greedy_selection(tree: &Tree, index_of_parent: usize) -> usize {
-    let children = tree.get_node(index_of_parent).children
+fn greedy_score(node: &Node) -> f64 {
+    node.score / node.total_visits as f64
+}
+
+fn ucb_selection(tree: &Tree, index_of_parent: usize) -> usize {
+    tree.get_node(index_of_parent).children
         .iter()
         .map(|child: &usize| {
             tree.get_node(*child)
-        });
-
-    let mut best_score: f64 = f64::MIN;
-    let mut best_index: usize = 0;
-
-    for (index, child) in children.enumerate() {
-        let score: f64 = calculate_node_score(child, tree.get_root_node().total_visits);
-
-        if score > best_score {
-            best_score = score;
-            best_index = index;
-        }
-    }
-
-    best_index
+        }).enumerate()
+        .map(|(index, child)| (index, ucb_score(child, tree.get_root_node().total_visits)))
+        .max_by(|(_, score1), (_, score2)| {
+            score1.partial_cmp(score2).unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .map(|(index, _)| index)
+        .unwrap_or(0)
 }
 
-fn evaluate_simulation(game: &Game, playing_for: bool) -> bool {
+fn greedy_selection(tree: &Tree, index_of_parent: usize) -> usize {
+    tree.get_node(index_of_parent).children
+        .iter()
+        .map(|child: &usize| {
+            tree.get_node(*child)
+        }).enumerate()
+        .map(|(index, child)| (index, greedy_score(child)))
+        .max_by(|(_, score1), (_, score2)| {
+            score1.partial_cmp(score2).unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .map(|(index, _)| index)
+        .unwrap_or(0)
+}
+
+fn evaluate_simulation(game: &Game, playing_for: bool) -> f64 {
     match game.get_winner() {
-        Some(1) if playing_for => true,
-        // None => 
-        _ => false
+        Some(2) => 0.0,
+        Some(1) if playing_for => 1.0,
+        Some(0) if !playing_for => 1.0,
+        Some(1) => -1.0,
+        Some(0) => -1.0,
+        _ => evalutate_game(&game.board, playing_for)
     }
+}
+
+fn evalutate_game(board: &Board, playing_for: bool) -> f64 {
+    let mut score: f64 = 0.0;
+    let playing_color_layer: u64 = if playing_for {
+        board.layer_color
+    } else {
+        !board.layer_color
+    };
+
+    score += (board.layer_pawn & playing_color_layer).count_ones() as f64;
+    score += (board.layer_knight & playing_color_layer).count_ones() as f64 * 3.0;
+    score += (board.layer_bishop & playing_color_layer).count_ones() as f64 * 3.0;
+    score += (board.layer_rook & playing_color_layer).count_ones() as f64 * 5.0;
+    score += (board.layer_queen & playing_color_layer).count_ones() as f64 * 7.0;
+
+    score -= (board.layer_pawn & !playing_color_layer).count_ones() as f64;
+    score -= (board.layer_knight & !playing_color_layer).count_ones() as f64 * 3.0;
+    score -= (board.layer_bishop & !playing_color_layer).count_ones() as f64 * 3.0;
+    score -= (board.layer_rook & !playing_color_layer).count_ones() as f64 * 5.0;
+    score -= (board.layer_queen & !playing_color_layer).count_ones() as f64 * 7.0;
+
+    score / 37.0
 }

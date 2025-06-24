@@ -39,6 +39,10 @@ pub struct Piece {
 }
 
 impl Piece {
+    pub fn new(color: bool, piece_type: PieceType) -> Piece {
+        Piece { color, piece_type }
+    }
+
     pub fn binary_to_piece(binary: u64) -> Piece {
         let color: bool = binary & 0b10000000 == 0b10000000;
 

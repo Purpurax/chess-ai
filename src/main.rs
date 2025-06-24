@@ -22,7 +22,8 @@ fn main() -> GameResult {
         // (Some(AgentType::Random), Some(AgentType::Minimax));
         // (Some(AgentType::Random), Some(AgentType::MonteCarlo(Tree::new())));
         // (None, Some(AgentType::MonteCarlo(Tree::new())));
-        (Some(AgentType::MonteCarlo(Tree::new())), Some(AgentType::MonteCarlo(Tree::new())));
+        // (Some(AgentType::MonteCarlo(Tree::new())), Some(AgentType::MonteCarlo(Tree::new())));
+        (Some(AgentType::Minimax), Some(AgentType::MonteCarlo(Tree::new())));
         // (Some(AgentType::Random), Some(AgentType::Random));
 
     ggez::start(conf, move |context, quad_ctx| {

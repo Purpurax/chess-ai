@@ -45,8 +45,8 @@ impl Engine {
     pub fn new(
         ctx: &mut Context,
         quad_ctx: &mut GraphicsContext,
-        white_agent_type: Option<AgentType>,
-        black_agent_type: Option<AgentType>
+        white_agent: Option<Agent>,
+        black_agent: Option<Agent>
     ) -> GameResult<Engine> {
         let game: Game = Game::new();
 
@@ -58,9 +58,6 @@ impl Engine {
 
         let carry_piece: CarryPiece = CarryPiece::new();
         let cooldown_until: f64 = timer::time();
-
-        let white_agent: Option<Agent> = white_agent_type.map(|val| Agent::new(val, &game, 1.0));
-        let black_agent: Option<Agent> = black_agent_type.map(|val| Agent::new(val, &game, 1.0));
 
         Ok(Engine {
             game,

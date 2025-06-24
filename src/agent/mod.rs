@@ -20,10 +20,10 @@ pub enum AgentType {
 }
 
 impl Agent {
-    pub fn new(agent_type: AgentType, game: &Game, max_compute_time: f64) -> Agent {
+    pub fn new(agent_type: AgentType, max_compute_time: f64) -> Agent {
         Agent {
             agent_type,
-            game: game.clone(),
+            game: Game::new(),
             max_compute_time
         }
     }

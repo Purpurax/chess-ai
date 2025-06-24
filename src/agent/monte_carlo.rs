@@ -32,11 +32,7 @@ impl Tree {
     pub fn get_root_node(&self) -> &Node {
         self.get_node(self.root_node_index)
     }
-
-    pub fn get_root_node_mut(&mut self) -> &mut Node {
-        self.get_node_mut(self.root_node_index)
-    }
-
+    
     pub fn add_new_node(&mut self, new_node: Node) -> usize {
         self.nodes.push(new_node);
         self.nodes.len() - 1
@@ -100,7 +96,7 @@ pub fn get_turn(initial_game: &Game, tree: &mut Tree, max_compute_time: f64) -> 
                 node_index = *tree.get_node(node_index).children.choose(&mut rand::rng()).unwrap();
             } else {
                 node_index = *tree.get_node(node_index).children
-                    .get(greedy_selection(&tree, node_index)).unwrap();
+                    .get(greedy_selection(tree, node_index)).unwrap();
             }
 
             simulation.perform_move(
@@ -147,9 +143,9 @@ pub fn get_turn(initial_game: &Game, tree: &mut Tree, max_compute_time: f64) -> 
     }
 
     let children_to_choose: &Vec<usize> = &tree.get_root_node().children;
-    let greedy_selection: usize = greedy_selection(&tree, tree.root_node_index);
+    let greedy_selection: usize = greedy_selection(tree, tree.root_node_index);
     let greedy_node_index_in_tree: usize = *children_to_choose.get(greedy_selection).unwrap();
-    let greedy_node: &Node = &tree.get_node(greedy_node_index_in_tree);
+    let greedy_node: &Node = tree.get_node(greedy_node_index_in_tree);
 
     println!("\nMonte-Carlo:\n > Execution time {:.3?}\n > best score {}\n > nodes simulated: {}",
         timer::time() - time_for_stop + max_compute_time,

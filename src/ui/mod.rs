@@ -59,14 +59,8 @@ impl Engine {
         let carry_piece: CarryPiece = CarryPiece::new();
         let cooldown_until: f64 = timer::time();
 
-        let white_agent: Option<Agent> = match white_agent_type {
-            Some(val) => Some(Agent::new(val, &game, 1.0)),
-            None => None
-        };
-        let black_agent: Option<Agent> = match black_agent_type {
-            Some(val) => Some(Agent::new(val, &game, 1.0)),
-            None => None
-        };
+        let white_agent: Option<Agent> = white_agent_type.map(|val| Agent::new(val, &game, 1.0));
+        let black_agent: Option<Agent> = black_agent_type.map(|val| Agent::new(val, &game, 1.0));
 
         Ok(Engine {
             game,
@@ -158,14 +152,12 @@ impl EventHandler<GameError> for Engine {
                 1 => println!("White has won the game !!!"),
                 _ => println!("Remis"),
             }
-        } else {
-            if self.game.player_turn && self.white_agent.is_some() {
-                let agent_move: (Position, Position) = self.white_agent.clone().unwrap().get_next_turn();
-                self.perform_move(&agent_move.0, &agent_move.1);
-            } else if !self.game.player_turn && self.black_agent.is_some() {
-                let agent_move: (Position, Position) = self.black_agent.clone().unwrap().get_next_turn();
-                self.perform_move(&agent_move.0, &agent_move.1);
-            }
+        } else if self.game.player_turn && self.white_agent.is_some() {
+            let agent_move: (Position, Position) = self.white_agent.clone().unwrap().get_next_turn();
+            self.perform_move(&agent_move.0, &agent_move.1);
+        } else if !self.game.player_turn && self.black_agent.is_some() {
+            let agent_move: (Position, Position) = self.black_agent.clone().unwrap().get_next_turn();
+            self.perform_move(&agent_move.0, &agent_move.1);
         }
 
         Ok(())
@@ -218,8 +210,7 @@ impl EventHandler<GameError> for Engine {
                 self.game.player_turn,
                 carry_position,
                 true,
-            ).into_iter()
-            .for_each(|to| {
+            ).into_iter().for_each(|to| {
                 let image: Image =
                     if Board::get_layer_value_at(self.game.board.get_empty_layer(), &to) {
                         self.images["outline green"].clone()
@@ -242,7 +233,7 @@ impl EventHandler<GameError> for Engine {
                     piece.get_color(),
                     &pos,
                     true
-                ).len() != 0 {
+                ).into_iter().peekable().peek().is_some() {
                     let image: Image = self.images["outline green"].clone();
     
                     let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);

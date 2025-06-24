@@ -87,7 +87,7 @@ impl Board {
         piece |= ((self.layer_bishop & mask) >> shift_amount) << 3;
         piece |= ((self.layer_rook & mask) >> shift_amount) << 2;
         piece |= ((self.layer_queen & mask) >> shift_amount) << 1;
-        piece | (self.layer_king & mask) >> shift_amount
+        piece | ((self.layer_king & mask) >> shift_amount)
     }
 
     fn set_position_binary(&mut self, position: &Position, binary: u64) {
@@ -146,8 +146,7 @@ impl Board {
     }
 
     pub fn iterator_pieces(&self) -> impl Iterator<Item = Piece> + '_ {
-        self.iterator()
-            .map(|binary_piece| Piece::binary_to_piece(binary_piece))
+        self.iterator().map(Piece::binary_to_piece)
     }
 
     pub fn iterator_positions_and_pieces(&self) -> impl Iterator<Item = (Position, Piece)> + '_ {

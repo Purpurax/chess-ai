@@ -45,6 +45,28 @@ pub fn get_possible_moves(
     .collect()
 }
 
+pub fn has_possible_moves(
+    board: &Board,
+    player_turn: bool,
+    pos: &Position,
+    checking_check: bool,
+) -> bool {
+    let from_piece: Piece = board.get_piece_at(pos);
+
+    !match from_piece.piece_type() {
+        PieceType::Empty => vec![],
+        PieceType::Pawn => get_possible_moves_pawn(pos),
+        PieceType::Knight => get_possible_moves_knight(pos),
+        PieceType::Bishop => get_possible_moves_bishop(pos),
+        PieceType::Rook => get_possible_moves_rook(pos),
+        PieceType::Queen => get_possible_moves_queen(pos),
+        PieceType::King => get_possible_moves_king(pos),
+    }
+    .into_iter()
+    .filter(|to| is_move_valid(board, player_turn, pos, to, checking_check))
+    .collect::<Vec<Position>>().is_empty()
+}
+
 fn get_possible_moves_pawn(pos: &Position) -> Vec<Position> {
     [
         (-2, 0),

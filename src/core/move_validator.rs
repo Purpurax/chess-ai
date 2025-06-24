@@ -1,7 +1,7 @@
 use crate::core::move_generator::get_possible_moves;
 
 use super::{
-    board::Board, move_generator::{get_all_possible_moves, has_possible_move}, piece::{Piece, PieceType}, position::Position
+    board::Board, move_generator::{get_all_possible_moves, has_possible_moves}, piece::{Piece, PieceType}, position::Position
 };
 
 pub fn is_move_valid(
@@ -75,21 +75,7 @@ pub fn is_check(board: &Board, player_turn: bool) -> bool {
 }
 
 pub fn is_checkmate(board: &Board, player_turn: bool) -> bool {
-    board
-        .clone()
-        .iterator_positions_and_pieces()
-        .filter_map(|(pos, piece)| {
-            if piece.get_color() != player_turn {
-                Some(pos)
-            } else {
-                None
-            }
-        })
-        .flat_map(|from_pos| {
-            get_possible_moves(board, !player_turn, &from_pos, true)
-                .into_iter()
-                .map(move |to_pos| (from_pos.clone(), to_pos.clone()))
-        })
+    get_all_possible_moves(board, !player_turn, true).into_iter()
         .map(|(from, to)| {
             let mut new_board: Board = board.clone();
             new_board.move_from_to(&from, &to);
@@ -109,9 +95,7 @@ pub fn is_checkmate(board: &Board, player_turn: bool) -> bool {
 //  - Threefold Repitition
 //  - 50-move rule (50 moves without a capture or pawn move)
 pub fn is_remis(board: &Board, player_turn: bool) -> bool {
-    board
-        .clone()
-        .iterator_positions_and_pieces()
+    !board.clone().iterator_positions_and_pieces()
         .filter_map(|(pos, piece)| {
             if piece.get_color() != player_turn {
                 Some(pos)
@@ -119,9 +103,9 @@ pub fn is_remis(board: &Board, player_turn: bool) -> bool {
                 None
             }
         })
-        .flat_map(|from_pos| {
-            get_possible_moves(board, !player_turn, &from_pos, true)
-        }).count() == 0
+        .any(|from_pos| {
+            has_possible_moves(board, !player_turn, &from_pos, true)
+        })
 }
 
 fn is_position_on_board(position: &Position) -> bool {

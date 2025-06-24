@@ -1,4 +1,4 @@
-use crate::core::{game::Game, position::Position};
+use crate::{agent::monte_carlo::Tree, core::{game::Game, position::Position}};
 
 pub mod minimax;
 pub mod monte_carlo;
@@ -11,11 +11,12 @@ pub struct Agent {
     pub max_compute_time: f64
 }
 
+#[allow(unused)]
 #[derive(Clone)]
 pub enum AgentType {
     Random,
     Minimax,
-    // MonteCarlo
+    MonteCarlo(Tree)
 }
 
 impl Agent {
@@ -31,11 +32,11 @@ impl Agent {
         self.game.perform_move(from_pos, to_pos);
     }
 
-    pub fn get_next_turn(&self) -> (Position, Position) {
-        match self.agent_type {
+    pub fn get_next_turn(&mut self) -> (Position, Position) {
+        match self.agent_type.clone() {
             AgentType::Random => random::get_turn(&self.game),
             AgentType::Minimax => minimax::get_turn(&self.game, self.max_compute_time),
-            // AgentType::MonteCarlo => monte_carlo::get_turn(&self.game, self.max_compute_time)
+            AgentType::MonteCarlo(mut tree) => monte_carlo::get_turn(&self.game, &mut tree, self.max_compute_time)
         }
     }
 }

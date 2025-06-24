@@ -162,8 +162,7 @@ impl EventHandler<GameError> for Engine {
             if self.game.player_turn && self.white_agent.is_some() {
                 let agent_move: (Position, Position) = self.white_agent.clone().unwrap().get_next_turn();
                 self.perform_move(&agent_move.0, &agent_move.1);
-            }
-            if !self.game.player_turn && self.black_agent.is_some() {
+            } else if !self.game.player_turn && self.black_agent.is_some() {
                 let agent_move: (Position, Position) = self.black_agent.clone().unwrap().get_next_turn();
                 self.perform_move(&agent_move.0, &agent_move.1);
             }

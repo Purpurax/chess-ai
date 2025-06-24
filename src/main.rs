@@ -7,6 +7,7 @@ use ggez::GameResult;
 use good_web_game as ggez;
 use ui::Engine;
 
+use crate::agent::monte_carlo::Tree;
 use crate::agent::AgentType;
 
 fn main() -> GameResult {
@@ -18,7 +19,10 @@ fn main() -> GameResult {
     let (white_agent, black_agent): (Option<AgentType>, Option<AgentType>) =
         // (None, None);
         // (None, Some(AgentType::Minimax));
-        (Some(AgentType::Random), Some(AgentType::Minimax));
+        // (Some(AgentType::Random), Some(AgentType::Minimax));
+        // (Some(AgentType::Random), Some(AgentType::MonteCarlo(Tree::new())));
+        // (None, Some(AgentType::MonteCarlo(Tree::new())));
+        (Some(AgentType::MonteCarlo(Tree::new())), Some(AgentType::MonteCarlo(Tree::new())));
         // (Some(AgentType::Random), Some(AgentType::Random));
 
     ggez::start(conf, move |context, quad_ctx| {

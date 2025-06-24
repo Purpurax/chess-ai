@@ -50,7 +50,7 @@ pub fn get_turn(game: &Game, max_compute_time_ms: f64) -> (Position, Position) {
         depth += 1;
     }
 
-    println!("-> Execution time {:.3?} \n-> best score {}\n-> depth: {}\n",
+    println!("\nMinimax:\n > Execution time {:.3?}\n > best score {}\n > depth: {}",
         last_depth_time_elapsed, best_score_total, depth);
     best_move_total.unwrap_or_else(|| panic!("Unable to find any minimax move"))
 }

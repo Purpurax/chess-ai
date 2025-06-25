@@ -31,10 +31,12 @@ pub fn get_turn(game: &Game, max_compute_time: f64) -> (Position, Position) {
                 break 'outer_loop;
             }
 
-            if maximizing_player && score.unwrap() >= best_score {
+            let noise: f64 = rand::random::<f64>() % 1.0;
+
+            if maximizing_player && score.unwrap() as f64 + noise >= best_score as f64 {
                 best_move = Some(move_used);
                 best_score = score.unwrap();
-            } else if !maximizing_player && score.unwrap() <= best_score {
+            } else if !maximizing_player && score.unwrap() as f64 + noise <= best_score as f64 {
                 best_move = Some(move_used);
                 best_score = score.unwrap();
             }
@@ -128,17 +130,25 @@ fn get_all_game_states_after_move(
 fn evaluate_board(board: &Board) -> isize {
     let mut score: isize = 0;
 
-    score += (board.layer_pawn & board.layer_color).count_ones() as isize;
-    score += (board.layer_knight & board.layer_color).count_ones() as isize * 3;
-    score += (board.layer_bishop & board.layer_color).count_ones() as isize * 3;
-    score += (board.layer_rook & board.layer_color).count_ones() as isize * 5;
-    score += (board.layer_queen & board.layer_color).count_ones() as isize * 7;
+    score += (board.layer_pawn & board.layer_color).count_ones() as isize * 10;
+    score += (board.layer_knight & board.layer_color).count_ones() as isize * 30;
+    score += (board.layer_bishop & board.layer_color).count_ones() as isize * 30;
+    score += (board.layer_rook & board.layer_color).count_ones() as isize * 50;
+    score += (board.layer_queen & board.layer_color).count_ones() as isize * 70;
 
-    score -= (board.layer_pawn & !board.layer_color).count_ones() as isize;
-    score -= (board.layer_knight & !board.layer_color).count_ones() as isize * 3;
-    score -= (board.layer_bishop & !board.layer_color).count_ones() as isize * 3;
-    score -= (board.layer_rook & !board.layer_color).count_ones() as isize * 5;
-    score -= (board.layer_queen & !board.layer_color).count_ones() as isize * 7;
+    score -= (board.layer_pawn & !board.layer_color).count_ones() as isize * 10;
+    score -= (board.layer_knight & !board.layer_color).count_ones() as isize * 30;
+    score -= (board.layer_bishop & !board.layer_color).count_ones() as isize * 30;
+    score -= (board.layer_rook & !board.layer_color).count_ones() as isize * 50;
+    score -= (board.layer_queen & !board.layer_color).count_ones() as isize * 70;
+
+    let center_control_white =
+        (0b1100000011000000000000000000000000000 & board.layer_color).count_ones() as isize;
+    let center_control_black =
+        (0b1100000011000000000000000000000000000 & !board.layer_color).count_ones() as isize;
+    
+    score += center_control_white;
+    score -= center_control_black;
 
     score
 }

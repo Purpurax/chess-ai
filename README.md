@@ -17,8 +17,7 @@ next todo:
 - alpha beta border pruning
 
 ## MCTS
-It is bad because of the random selection as that makes the agent not being able to judge if a move is very good, very bad, or ok. epsilon-greedy selection should counteract this.
-- Change to epsilon-greedy selection in the MC simulation node selection policy
+
 
 
 ## Neural Networks

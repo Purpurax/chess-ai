@@ -1,7 +1,6 @@
 use core::f64;
-use std::{iter, sync::{Arc, Mutex}, thread};
+use std::{sync::{Arc, Mutex}, thread};
 use good_web_game::timer;
-use itertools::sorted;
 use rand::seq::IteratorRandom;
 
 use crate::{agent::random, core::{board::Board, game::Game, move_generator::get_all_possible_moves, piece::PieceType, position::Position}};
@@ -22,6 +21,15 @@ pub struct TreeState {
 }
 
 impl Tree {
+    pub fn blank() -> Tree {
+        Tree {
+            tree_state: Arc::new(Mutex::new(TreeState {
+                nodes: vec![],
+                color: false
+            }))
+        }
+    }
+
     pub fn new() -> Tree {
         let root_node: Node = Node::new_root();
         Tree {
@@ -33,62 +41,46 @@ impl Tree {
     }
 
     pub fn walk_edge_permanently(&mut self, from_pos: &Position, to_pos: &Position) {
-        let nodes_to_remove = sorted(
-            self.get_root_node().children
-                .into_iter()
-                .flat_map(|child| {
-                    if self.get_node_edge(child) != Some((from_pos.clone(), to_pos.clone())) {
-                        self.get_every_relative(child)
-                    } else {
-                        vec![]
+        let index_root_self_op: Option<usize> = self.get_root_node().children
+            .into_iter()
+            .find(|child| {
+                self.tree_state.lock().unwrap().nodes.get(*child).unwrap().edge_to_this_node
+                == Some((from_pos.clone(), to_pos.clone()))
+            });
+        
+        if let Some(index_root_self) = index_root_self_op {
+            let mut tree: Tree = Tree::blank();
+            self.copy_rec_nodes(&mut tree, index_root_self, None);
+            *self = tree;
+        } else {
+            *self = Tree::new();
+        }
+    }
+
+    fn copy_rec_nodes(&mut self, tree: &mut Tree, index_self: usize, parent_tree_index: Option<usize>) {
+        let new_index: usize = tree.tree_state.lock().unwrap().nodes.len();
+
+        let mut node: Node = self.get_node(index_self);
+        node.parent = parent_tree_index;
+        
+        if let Some(parent_index) = parent_tree_index {
+            let mutex = &mut tree.tree_state.lock().unwrap();
+            let parent: &mut Node = mutex.nodes.get_mut(parent_index).unwrap();
+            parent.children.iter_mut()
+                .for_each(|parents_child| {
+                    if *parents_child == index_self {
+                        *parents_child = new_index;
                     }
                 })
-            )
-            .rev();
-        
-        nodes_to_remove.clone().for_each(|index| self.remove_node(index));
-        self.remove_node(0);
-        self.update_nodes_after_remove(
-            nodes_to_remove.chain(iter::once(0))
-                .collect::<Vec<usize>>()
-        );
-    }
+        }
 
-    fn get_every_relative(&mut self, node_index: usize) -> Vec<usize> {
-        iter::once(node_index)
-        .chain(
-            self.get_node_children(node_index)
-                .into_iter()
-                .flat_map(|child_index| self.get_every_relative(child_index))
-        ).collect::<Vec<usize>>()
-    }
-    
-    fn remove_node(&mut self, node_index: usize) {
-        self.tree_state.lock().unwrap().nodes.remove(node_index);
-    }
+        let nodes_children: Vec<usize> = node.children.clone();
+        tree.tree_state.lock().unwrap().nodes.push(node);
 
-    fn update_nodes_after_remove(&mut self, removed_indices: Vec<usize>) {
-        self.tree_state.lock().unwrap().nodes
-            .iter_mut()
-            .for_each(|node| {
-                if let Some(parent_index) = node.parent {
-                    for removed_index in removed_indices.iter() {
-                        if parent_index == *removed_index {
-                            node.parent = None;
-                        } else if parent_index > *removed_index {
-                            node.parent = Some(parent_index.saturating_sub(1))
-                        }
-                    }
-                }
-                node.children.iter_mut()
-                    .for_each(|child_index| {
-                        for removed_index in removed_indices.iter() {
-                            if *child_index > *removed_index {
-                                *child_index = child_index.saturating_sub(1)
-                            }
-                        }
-                    });
-            })
+        nodes_children.into_iter()
+            .for_each(|child| {
+                self.copy_rec_nodes(tree, child, Some(new_index));
+            });
     }
 
     pub fn refresh(&mut self, player_turn: bool) {
@@ -99,7 +91,7 @@ impl Tree {
     pub fn get_node(&self, index: usize) -> Node {
         self.tree_state.lock().unwrap().nodes.get(index).unwrap().clone()
     }
-
+    
     pub fn get_node_children(&self, index: usize) -> Vec<usize> {
         self.tree_state.lock().unwrap().nodes.get(index).unwrap().children.clone()
     }
@@ -353,3 +345,117 @@ fn evalutate_game(board: &Board, playing_for: bool) -> f64 {
 
     score / 40.0
 }
+
+// mod tests {
+//     use super::*;
+
+//     #[test]
+//     fn test_walk_edge_permanently() {
+//         // Create a tree with a known structure
+//         let mut tree = Tree::new();
+        
+//         // First, build a small tree with depth 3
+//         // Root (0) has 3 children: A (1), B (2), C (3)
+//         // A has 2 children: D (4), E (5)
+//         // B has 1 child: F (6)
+//         // D has 1 child: G (7)
+        
+//         // Add the first level
+//         let a_node = Node::new((Position::new(0, 0), Position::new(1, 0)), 0);
+//         let b_node = Node::new((Position::new(0, 1), Position::new(1, 1)), 0);
+//         let c_node = Node::new((Position::new(0, 2), Position::new(1, 2)), 0);
+        
+//         let a_index = tree.add_new_node(a_node);
+//         let b_index = tree.add_new_node(b_node);
+//         let c_index = tree.add_new_node(c_node);
+        
+//         // Update root's children
+//         tree.modfiy_node(0, |node| {
+//             node.children = vec![a_index, b_index, c_index];
+//         });
+        
+//         // Add the second level
+//         let d_node = Node::new((Position::new(1, 0), Position::new(2, 0)), a_index);
+//         let e_node = Node::new((Position::new(1, 1), Position::new(2, 1)), a_index);
+//         let f_node = Node::new((Position::new(1, 2), Position::new(2, 2)), b_index);
+        
+//         let d_index = tree.add_new_node(d_node);
+//         let e_index = tree.add_new_node(e_node);
+//         let f_index = tree.add_new_node(f_node);
+        
+//         // Update A and B's children
+//         tree.modfiy_node(a_index, |node| {
+//             node.children = vec![d_index, e_index];
+//         });
+        
+//         tree.modfiy_node(b_index, |node| {
+//             node.children = vec![f_index];
+//         });
+        
+//         // Add the third level
+//         let g_node = Node::new((Position::new(2, 0), Position::new(3, 0)), d_index);
+//         let g_index = tree.add_new_node(g_node);
+        
+//         // Update D's children
+//         tree.modfiy_node(d_index, |node| {
+//             node.children = vec![g_index];
+//         });
+        
+//         // Print initial tree state
+//         println!("Initial tree structure:");
+//         print_tree_structure(&tree);
+        
+//         // First walk: Select B's edge to keep
+//         println!("\nWalking edge B (0,1)->(1,1)");
+//         let from_pos_b = Position::new(0, 1);
+//         let to_pos_b = Position::new(1, 1);
+//         tree.walk_edge_permanently(&from_pos_b, &to_pos_b);
+        
+//         // Print tree state after first walk
+//         println!("\nTree structure after first walk:");
+//         print_tree_structure(&tree);
+        
+//         // Second walk: Select F's edge to keep
+//         println!("\nWalking edge F (1,2)->(2,2)");
+//         let from_pos_f = Position::new(1, 2);
+//         let to_pos_f = Position::new(2, 2);
+//         tree.walk_edge_permanently(&from_pos_f, &to_pos_f);
+        
+//         // Print final tree state
+//         println!("\nFinal tree structure:");
+//         print_tree_structure(&tree);
+        
+//         // Verify the structure is as expected
+//         assert_eq!(tree.tree_state.lock().unwrap().nodes.len(), 2, 
+//             "Tree should have 2 nodes: root and F");
+            
+//         // Check that the remaining child has the correct edge (F)
+//         let root_node = tree.get_root_node();
+//         assert_eq!(root_node.children.len(), 1, "Root should have 1 child");
+//         let f_idx = root_node.children[0];
+//         let f_node = tree.get_node(f_idx);
+//         assert_eq!(f_node.edge_to_this_node, Some((Position::new(1, 2), Position::new(2, 2))),
+//             "Remaining node should have F's edge");
+//     }
+
+//     // Helper function to print the tree structure for debugging
+//     fn print_tree_structure(tree: &Tree) {
+//         let nodes = tree.tree_state.lock().unwrap().nodes.clone();
+//         println!("Tree has {} nodes", nodes.len());
+        
+//         for (i, node) in nodes.iter().enumerate() {
+//             let edge_str = match &node.edge_to_this_node {
+//                 Some((from, to)) => format!("({},{}) -> ({},{})", from.row, from.column, to.row, to.column),
+//                 None => "ROOT".to_string()
+//             };
+            
+//             let parent_str = match node.parent {
+//                 Some(p) => format!("{}", p),
+//                 None => "None".to_string()
+//             };
+            
+//             println!("Node {}: Edge: {}, Parent: {}, Children: {:?}, Visits: {}, Score: {}",
+//                 i, edge_str, parent_str, node.children, node.total_visits, node.score);
+//         }
+//     }
+// }

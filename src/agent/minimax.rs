@@ -91,7 +91,7 @@ pub fn minimax(
         }
         Some(max_eval)
     } else {
-        let mut min_eval = isize::MIN - game.step_counter as isize;
+        let mut min_eval = isize::MAX - game.step_counter as isize;
 
         for future_game in games_after_one_move {
             let eval = minimax(&future_game, depth - 1, alpha, beta, stop_time);

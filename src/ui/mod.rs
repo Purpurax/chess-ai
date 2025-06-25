@@ -124,14 +124,14 @@ impl Engine {
     }
 
     fn perform_move(&mut self, from_pos: &Position, to_pos: &Position) {
-        self.game.perform_move(from_pos, to_pos);
-
         if let Some(white_agent) = &mut self.white_agent {
             white_agent.inform_about_move(from_pos, to_pos);
         }
         if let Some(black_agent) = &mut self.black_agent {
             black_agent.inform_about_move(from_pos, to_pos);
         }
+        
+        self.game.perform_move(from_pos, to_pos);
 
         self.cooldown_until = timer::time() + COOLDOWN_TIME;
     }

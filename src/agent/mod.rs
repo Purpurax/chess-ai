@@ -29,14 +29,26 @@ impl Agent {
     }
 
     pub fn inform_about_move(&mut self, from_pos: &Position, to_pos: &Position) {
-        self.game.perform_move(from_pos, to_pos);
+        match &mut self.agent_type {
+            AgentType::Random |
+            AgentType::Minimax => {
+                self.game.perform_move(from_pos, to_pos);
+            }, AgentType::MonteCarlo(ref mut tree) => {
+                self.game.perform_move(from_pos, to_pos);
+                tree.walk_edge_permanently(from_pos, to_pos);
+            }
+        }
     }
 
     pub fn get_next_turn(&mut self) -> (Position, Position) {
-        match self.agent_type.clone() {
+        let res = match &mut self.agent_type {
             AgentType::Random => random::get_turn(&self.game),
             AgentType::Minimax => minimax::get_turn(&self.game, self.max_compute_time),
-            AgentType::MonteCarlo(mut tree) => monte_carlo::get_turn(&self.game, &mut tree, self.max_compute_time)
-        }
+            AgentType::MonteCarlo(ref mut tree) => {
+                let ressy = monte_carlo::get_turn(&self.game, tree, self.max_compute_time);
+                ressy
+            }
+        };
+        res
     }
 }

@@ -7,15 +7,14 @@ use super::{
 
 pub fn get_all_possible_moves(
     board: &Board,
-    player_turn: bool,
-    checking_check: bool
+    player_turn: bool
 ) -> Vec<(Position, Position)> {
     board.iterator_positions_and_pieces()
         .filter(|(_pos, piece)| {
             piece.piece_type() != PieceType::Empty
             && piece.get_color() == player_turn
         }).flat_map(|(from_pos, _)| {
-            get_possible_moves(board, player_turn, &from_pos, checking_check)
+            get_possible_moves(board, player_turn, &from_pos)
                 .into_iter()
                 .map(move |to_pos| {
                     (from_pos.clone(), to_pos)
@@ -26,8 +25,7 @@ pub fn get_all_possible_moves(
 pub fn get_possible_moves(
     board: &Board,
     player_turn: bool,
-    pos: &Position,
-    checking_check: bool,
+    pos: &Position
 ) -> Vec<Position> {
     let from_piece: Piece = board.get_piece_at(pos);
 
@@ -41,15 +39,14 @@ pub fn get_possible_moves(
         PieceType::King => get_possible_moves_king(pos),
     }
     .into_iter()
-    .filter(|to| is_move_valid(board, player_turn, pos, to, checking_check))
+    .filter(|to| is_move_valid(board, player_turn, pos, to))
     .collect()
 }
 
 pub fn has_possible_moves(
     board: &Board,
     player_turn: bool,
-    pos: &Position,
-    checking_check: bool,
+    pos: &Position
 ) -> bool {
     let from_piece: Piece = board.get_piece_at(pos);
 
@@ -63,7 +60,7 @@ pub fn has_possible_moves(
         PieceType::King => get_possible_moves_king(pos),
     }
     .into_iter()
-    .filter(|to| is_move_valid(board, player_turn, pos, to, checking_check))
+    .filter(|to| is_move_valid(board, player_turn, pos, to))
     .collect::<Vec<Position>>().is_empty()
 }
 

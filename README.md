@@ -10,7 +10,7 @@ next todo:
 - display captured pieces
 - change outlines when agent plays, maybe a blue outline or some indication
 
-- profile and optimize anything
+- profile and optimize anything with `samply record ./target/release/chess-ai`
 
 ## Minimax
 - parallel computing

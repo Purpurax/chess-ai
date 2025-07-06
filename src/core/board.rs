@@ -172,7 +172,7 @@ impl Board {
     }
 
     pub fn is_move_valid(&self, player_turn: bool, from: &Position, to: &Position) -> bool {
-        move_validator::is_move_valid(self, player_turn, from, to, true)
+        move_validator::is_move_valid(self, player_turn, from, to)
     }
 
     pub fn move_from_to(&mut self, from: &Position, to: &Position) {

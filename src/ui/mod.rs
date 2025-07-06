@@ -11,7 +11,7 @@ use good_web_game::graphics::Color;
 use miniquad::GraphicsContext;
 use std::collections::HashMap;
 
-use crate::agent::{Agent, AgentType};
+use crate::agent::Agent;
 use crate::core::board::Board;
 use crate::core::game::Game;
 use crate::core::move_generator::get_possible_moves;
@@ -205,8 +205,7 @@ impl EventHandler<GameError> for Engine {
             get_possible_moves(
                 &self.game.board,
                 self.game.player_turn,
-                carry_position,
-                true,
+                carry_position
             ).into_iter().for_each(|to| {
                 let image: Image =
                     if Board::get_layer_value_at(self.game.board.get_empty_layer(), &to) {
@@ -228,8 +227,7 @@ impl EventHandler<GameError> for Engine {
                     if get_possible_moves(
                         &self.game.board,
                         piece.get_color(),
-                        &pos,
-                        true
+                        &pos
                     ).into_iter().peekable().peek().is_some() {
                         let image: Image = self.images["outline green"].clone();
         

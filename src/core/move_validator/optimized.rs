@@ -1,8 +1,5 @@
-use crate::core::move_generator::get_possible_moves;
+use crate::core::{board::Board, move_generator::{get_all_possible_moves, get_possible_moves, has_possible_moves}, piece::{Piece, PieceType}, position::Position};
 
-use super::{
-    board::Board, move_generator::{get_all_possible_moves, has_possible_moves}, piece::{Piece, PieceType}, position::Position
-};
 
 pub fn is_move_valid(
     board: &Board,
@@ -46,8 +43,6 @@ pub fn is_move_valid(
     }
 }
 
-// More efficient, if you first check whether a bishop, rock, or queen is in a possible square
-// and only then check with a growing mask
 pub fn is_check(board: &Board, player_turn: bool) -> bool {
     let king_layer: u64 = if player_turn {
         (!board.layer_color) & board.layer_king
@@ -59,28 +54,21 @@ pub fn is_check(board: &Board, player_turn: bool) -> bool {
     }
     let king_index: u32 = king_layer.ilog2();
 
-    if is_checked_by_pawn(
+    is_checked_by_pawn(
         king_layer,
         king_index,
         player_turn,
         board.layer_color,
         board.layer_pawn
-    ) {
-        return true
-    }
-
-    if is_checked_by_knight(
+    ) || is_checked_by_knight(
         king_layer,
         king_index,
         if player_turn {
             board.layer_color & board.layer_knight
         } else {
             (!board.layer_color) & board.layer_knight
-        }) {
-        return true
-    }
-
-    if is_checked_in_diagonal_line(
+        }
+    ) || is_checked_in_diagonal_line(
         king_layer,
         king_index,
         if player_turn {
@@ -94,11 +82,7 @@ pub fn is_check(board: &Board, player_turn: bool) -> bool {
             | board.layer_rook
             | board.layer_queen
             | board.layer_king
-    ) {
-        return true
-    }
-
-    if is_checked_in_straight_line(
+    ) || is_checked_in_straight_line(
         king_layer,
         king_index,
         if player_turn {
@@ -112,27 +96,7 @@ pub fn is_check(board: &Board, player_turn: bool) -> bool {
             | board.layer_rook
             | board.layer_queen
             | board.layer_king
-    ) {
-        return true
-    }
-
-    false
-
-    // board.iterator_positions_and_pieces()
-    //     .filter_map(|(pos, piece)| {
-    //         if piece.get_color() == player_turn {
-    //             Some(pos)
-    //         } else {
-    //             None
-    //         }
-    //     })
-    //     .any(|from_pos| {
-    //         get_possible_moves(board, player_turn, &from_pos, false)
-    //             .into_iter()
-    //             .any(|to_pos| {
-    //                 king_index == to_pos.as_u32()
-    //             })
-    //     })
+    )
 }
 
 fn is_checked_by_pawn(king_layer: u64, king_index: u32, player_turn: bool, layer_color: u64, layer_pawn: u64) -> bool {

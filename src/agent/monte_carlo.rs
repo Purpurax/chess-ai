@@ -218,7 +218,7 @@ fn monte_carlo_iteration(initial_game: Game, tree: &mut Tree, time_for_stop: f64
         }
 
         if !tree.get_node_termination_bool(node_index) {
-            let new_children: Vec<usize> = get_all_possible_moves(&simulation_game.board, simulation_game.player_turn, true)
+            let new_children: Vec<usize> = get_all_possible_moves(&simulation_game.board, simulation_game.player_turn)
                 .into_iter()
                 .map(|edge| {
                     let new_node: Node = Node::new(edge, node_index);
@@ -259,7 +259,7 @@ fn get_heuristic_random_turn(game: &Game) -> (Position, Position) {
     if rand::random::<f64>() < EPSILON_SIMULATION {
         random::get_turn(game)
     } else {
-        get_all_possible_moves(&game.board, game.player_turn, true)
+        get_all_possible_moves(&game.board, game.player_turn)
             .into_iter()
             .filter(|(_, to_pos)|
                 game.board.get_piece_at(to_pos).piece_type() != PieceType::Empty

@@ -112,7 +112,7 @@ pub fn minimax(
 fn get_all_game_states_with_move(
     game: &Game
 )  -> impl Iterator<Item=(Move, Game)> + '_ {
-    get_all_possible_moves(&game.board, game.player_turn, true)
+    get_all_possible_moves(&game.board, game.player_turn)
         .into_iter().map(|(from_pos, to_pos)| {
             let mut new_game: Game = game.clone();
             new_game.perform_move(&from_pos, &to_pos);

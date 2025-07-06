@@ -21,11 +21,11 @@ fn main() -> GameResult {
         // None;
         // Some(Agent::new(AgentType::Random, 1.0));
         // Some(Agent::new(AgentType::Minimax, 1.0));
-        Some(Agent::new(AgentType::MonteCarlo(Tree::new()), 1.0));
+        Some(Agent::new(AgentType::MonteCarlo(Tree::new()), 1.0)); // Currently ~36000 nodes
     let black_agent: Option<Agent> =
         // None;
         // Some(Agent::new(AgentType::Random, 1.0));
-        Some(Agent::new(AgentType::Minimax, 1.0));
+        Some(Agent::new(AgentType::Minimax, 1.0)); // Currently ~5
         // Some(Agent::new(AgentType::MonteCarlo(Tree::new()), 1.0));
 
     ggez::start(conf, move |context, quad_ctx| {

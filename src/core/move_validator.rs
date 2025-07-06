@@ -46,6 +46,8 @@ pub fn is_move_valid(
     }
 }
 
+// More efficient, if you first check whether a bishop, rock, or queen is in a possible square
+// and only then check with a growing mask
 pub fn is_check(board: &Board, player_turn: bool) -> bool {
     let king_layer: u64 = if player_turn {
         (!board.layer_color) & board.layer_king
@@ -53,25 +55,267 @@ pub fn is_check(board: &Board, player_turn: bool) -> bool {
         board.layer_color & board.layer_king
     };
     if king_layer == 0b0 {
-        return true;
+        return true
     }
     let king_index: u32 = king_layer.ilog2();
 
-    board.iterator_positions_and_pieces()
-        .filter_map(|(pos, piece)| {
-            if piece.get_color() == player_turn {
-                Some(pos)
-            } else {
-                None
-            }
-        })
-        .any(|from_pos| {
-            get_possible_moves(board, player_turn, &from_pos, false)
-                .into_iter()
-                .any(|to_pos| {
-                    king_index == to_pos.as_u32()
-                })
-        })
+    if is_checked_by_pawn(
+        king_layer,
+        king_index,
+        player_turn,
+        board.layer_color,
+        board.layer_pawn
+    ) {
+        return true
+    }
+
+    if is_checked_by_knight(
+        king_layer,
+        king_index,
+        if player_turn {
+            board.layer_color & board.layer_knight
+        } else {
+            (!board.layer_color) & board.layer_knight
+        }) {
+        return true
+    }
+
+    if is_checked_in_diagonal_line(
+        king_layer,
+        king_index,
+        if player_turn {
+            board.layer_color & (board.layer_bishop | board.layer_queen)
+        } else {
+            (!board.layer_color) & (board.layer_bishop | board.layer_queen)
+        },
+        board.layer_pawn
+            | board.layer_knight
+            | board.layer_bishop
+            | board.layer_rook
+            | board.layer_queen
+            | board.layer_king
+    ) {
+        return true
+    }
+
+    if is_checked_in_straight_line(
+        king_layer,
+        king_index,
+        if player_turn {
+            board.layer_color & (board.layer_rook | board.layer_queen)
+        } else {
+            (!board.layer_color) & (board.layer_rook | board.layer_queen)
+        },
+        board.layer_pawn
+            | board.layer_knight
+            | board.layer_bishop
+            | board.layer_rook
+            | board.layer_queen
+            | board.layer_king
+    ) {
+        return true
+    }
+
+    false
+
+    // board.iterator_positions_and_pieces()
+    //     .filter_map(|(pos, piece)| {
+    //         if piece.get_color() == player_turn {
+    //             Some(pos)
+    //         } else {
+    //             None
+    //         }
+    //     })
+    //     .any(|from_pos| {
+    //         get_possible_moves(board, player_turn, &from_pos, false)
+    //             .into_iter()
+    //             .any(|to_pos| {
+    //                 king_index == to_pos.as_u32()
+    //             })
+    //     })
+}
+
+fn is_checked_by_pawn(king_layer: u64, king_index: u32, player_turn: bool, layer_color: u64, layer_pawn: u64) -> bool {
+    if player_turn && king_index < 56 {
+        let mut pawn_mask: u64 = 0b0;
+
+        if king_index % 8 > 0 {
+            pawn_mask |= king_layer << 7;
+        }
+        if king_index % 8 < 7 {
+            pawn_mask |= king_layer << 9;
+        }
+        
+        let pawns: u64 = layer_color & layer_pawn;
+        
+        pawn_mask & pawns != 0b0 
+    } else if !player_turn && king_index > 7 {
+        let mut pawn_mask: u64 = 0b0;
+
+        if king_index % 8 > 0 {
+            pawn_mask |= king_layer >> 9;
+        }
+        if king_index % 8 < 7 {
+            pawn_mask |= king_layer >> 7;
+        }
+        
+        let pawns: u64 = layer_color & layer_pawn;
+        
+        pawn_mask & pawns != 0b0
+    } else {
+        false
+    }
+}
+
+fn is_checked_by_knight(king_layer: u64, king_index: u32, knight_layer: u64) -> bool {
+    let mut knight_mask: u64 = 0b0;
+    
+    if king_index % 8 != 0 && king_index > 15 { // up-left
+        knight_mask |= king_layer >> 17;
+    }
+    if king_index % 8 != 7 && king_index > 15 { // up-right
+        knight_mask |= king_layer >> 15;
+    }
+
+    if king_index % 8 < 6 && king_index > 7 { // right-up
+        knight_mask |= king_layer >> 6;
+    }
+    if king_index % 8 < 6 && king_index < 56 { // right-down
+        knight_mask |= king_layer << 10;
+    }
+
+    if king_index % 8 != 7 && king_index < 48 { // down-right
+        knight_mask |= king_layer << 17;
+    }
+    if king_index % 8 != 0 && king_index < 48 { // down-left
+        knight_mask |= king_layer << 15;
+    }
+
+    if king_index % 8 > 1 && king_index > 7 { // left-up
+        knight_mask |= king_layer >> 10;
+    }
+    if king_index % 8 < 1 && king_index < 56 { // left-down
+        knight_mask |= king_layer << 6;
+    }
+    
+    knight_layer & knight_mask != 0b0
+}
+
+fn is_checked_in_diagonal_line(king_layer: u64, king_index: u32, pieces_layer: u64, all_pieces_layer: u64) -> bool {
+    let mut square_to_check: u64 = king_layer;
+    let mut square_index: u32 = king_index;
+    while square_index % 8 > 0 && square_index > 7 {
+        square_to_check >>= 9; // up-left
+        square_index -= 9;
+
+        if pieces_layer & square_to_check != 0b0 {
+            return true
+        }
+        if all_pieces_layer & square_to_check != 0b0 {
+            break
+        }
+    }
+
+    square_to_check = king_layer;
+    square_index = king_index;
+    while square_index % 8 < 7 && square_index > 7 {
+        square_to_check >>= 7; // up-right
+        square_index -= 7;
+
+        if pieces_layer & square_to_check != 0b0 {
+            return true
+        }
+        if all_pieces_layer & square_to_check != 0b0 {
+            break
+        }
+    }
+
+    square_to_check = king_layer;
+    square_index = king_index;
+    while square_index % 8 > 0 && square_index < 56 {
+        square_to_check <<= 7; // down-left
+        square_index += 7;
+
+        if pieces_layer & square_to_check != 0b0 {
+            return true
+        }
+        if all_pieces_layer & square_to_check != 0b0 {
+            break
+        }
+    }
+
+    square_to_check = king_layer;
+    square_index = king_index;
+    while square_index % 8 < 7 && square_index < 56 {
+        square_to_check <<= 9; // down-left
+        square_index += 9;
+
+        if pieces_layer & square_to_check != 0b0 {
+            return true
+        }
+        if all_pieces_layer & square_to_check != 0b0 {
+            break
+        }
+    }
+
+
+    false
+}
+
+fn is_checked_in_straight_line(king_layer: u64, king_index: u32, pieces_layer: u64, all_pieces_layer: u64) -> bool {
+    let mut square_to_check: u64 = king_layer;
+    while square_to_check != 0b0 {
+        square_to_check >>= 8; // up
+
+        if pieces_layer & square_to_check != 0b0 {
+            return true
+        }
+        if all_pieces_layer & square_to_check != 0b0 {
+            break
+        }
+    }
+
+    square_to_check = king_layer;
+    while square_to_check != 0b0 {
+        square_to_check <<= 8; // down
+
+        if pieces_layer & square_to_check != 0b0 {
+            return true
+        }
+        if all_pieces_layer & square_to_check != 0b0 {
+            break
+        }
+    }
+
+    let mut square_index: u32 = king_index;
+    square_to_check = king_layer;
+    while square_index % 8 > 0 {
+        square_to_check >>= 1; // left
+        square_index -= 1;
+
+        if pieces_layer & square_to_check != 0b0 {
+            return true
+        }
+        if all_pieces_layer & square_to_check != 0b0 {
+            break
+        }
+    }
+
+    square_index = king_index;
+    square_to_check = king_layer;
+    while square_index % 8 < 7 {
+        square_to_check <<= 1; // right
+        square_index += 1;
+
+        if pieces_layer & square_to_check != 0b0 {
+            return true
+        }
+        if all_pieces_layer & square_to_check != 0b0 {
+            break
+        }
+    }
+
+    false
 }
 
 pub fn is_checkmate(board: &Board, player_turn: bool) -> bool {

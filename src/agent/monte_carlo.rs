@@ -1,7 +1,6 @@
 use core::f64;
 use std::{sync::{Arc, Mutex}, thread};
 use good_web_game::timer;
-use rand::seq::IteratorRandom;
 
 use crate::{agent::random, core::{board::Board, game::Game, move_generator::get_all_possible_moves, piece::PieceType, position::Position}};
 
@@ -256,15 +255,18 @@ fn simulation(mut game: Game, playing_for: bool) -> f64 {
 }
 
 fn get_heuristic_random_turn(game: &Game) -> (Position, Position) {
-    if rand::random::<f64>() < EPSILON_SIMULATION {
+    if random::get_random_f64() < EPSILON_SIMULATION {
         random::get_turn(game)
     } else {
-        get_all_possible_moves(&game.board, game.player_turn)
+        let possible_moves = get_all_possible_moves(&game.board, game.player_turn)
             .into_iter()
             .filter(|(_, to_pos)|
                 game.board.get_piece_at(to_pos).piece_type() != PieceType::Empty
-            ).choose(&mut rand::rng())
-            .unwrap_or(random::get_turn(game))
+            )
+            .collect::<Vec<(Position, Position)>>();
+        
+        possible_moves.get(random::get_random_range(possible_moves.len()))
+            .unwrap_or(&random::get_turn(game)).clone()
     }
 }
 

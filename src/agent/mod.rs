@@ -22,14 +22,6 @@ pub enum AgentType {
 }
 
 impl Agent {
-    pub fn new(agent_type: AgentType, max_compute_time: f64) -> Agent {
-        Agent {
-            agent_type,
-            game: Game::new(),
-            max_compute_time
-        }
-    }
-
     pub fn new_random() -> Agent {
         Agent {
             agent_type: AgentType::Random,

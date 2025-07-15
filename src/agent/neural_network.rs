@@ -2,7 +2,6 @@ use std::f64::consts::E;
 use std::{error::Error, fs::File};
 use std::io::Write;
 use good_web_game::timer;
-use rand::Rng;
 use serde::{Serialize, Deserialize};
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
@@ -12,7 +11,7 @@ use crate::core::move_generator::get_all_possible_moves;
 use crate::core::piece::PieceType;
 use crate::core::position::Position;
 
-use super::minimax;
+use super::{minimax, random};
 
 const INPUT_NODE_COUNT: usize = 64;
 const OUTPUT_NODE_COUNT: usize = 1;
@@ -73,19 +72,18 @@ impl Network {
     }
 
     pub fn mutate(&self, mutation_rate: f64, mutation_strength: f64) -> Network {
-        let mut rng = rand::rng();
         let mut mutated: Network = self.clone();
 
         mutated.input_layers.iter_mut()
             .for_each(|node| {
-                if rng.random::<f64>() % 1.0 < mutation_rate {
-                    node.bias += rng.random_range(-mutation_strength..mutation_strength);
+                if random::get_random_f64() < mutation_rate {
+                    node.bias += (random::get_random_f64() - 0.5) * 2.0 * mutation_strength;
                 }
 
                 node.weights.iter_mut()
                     .for_each(|weight| {
-                        if rng.random::<f64>() % 1.0 < mutation_rate {
-                            *weight += rng.random_range(-mutation_strength..mutation_strength);
+                        if random::get_random_f64() < mutation_rate {
+                            *weight += (random::get_random_f64() - 0.5) * 2.0 * mutation_strength;
                         }
                     })
             });
@@ -94,14 +92,14 @@ impl Network {
             .for_each(|layer| {
                 layer.iter_mut()
                     .for_each(|node| {
-                        if rng.random::<f64>() % 1.0 < mutation_rate {
-                            node.bias += rng.random_range(-mutation_strength..mutation_strength);
+                        if random::get_random_f64() < mutation_rate {
+                            node.bias += (random::get_random_f64() - 0.5) * 2.0 * mutation_strength;
                         }
 
                         node.weights.iter_mut()
                             .for_each(|weight| {
-                                if rng.random::<f64>() % 1.0 < mutation_rate {
-                                    *weight += rng.random_range(-mutation_strength..mutation_strength);
+                                if random::get_random_f64() < mutation_rate {
+                                    *weight += (random::get_random_f64() - 0.5) * 2.0 * mutation_strength;
                                 }
                             })
                         })

@@ -4,6 +4,8 @@ use good_web_game::timer;
 
 use crate::core::{board::Board, game::Game, move_generator::get_all_possible_moves, position::Position};
 
+use super::random;
+
 type Move = (Position, Position);
 
 pub fn get_turn(game: &Game, max_compute_time: f64, silent: bool) -> (Position, Position) {
@@ -31,7 +33,7 @@ pub fn get_turn(game: &Game, max_compute_time: f64, silent: bool) -> (Position, 
                 break 'outer_loop;
             }
 
-            let noise: f64 = rand::random::<f64>() % 1.0;
+            let noise: f64 = random::get_random_f64();
 
             if maximizing_player && score.unwrap() as f64 + noise >= best_score as f64
             || !maximizing_player && score.unwrap() as f64 + noise <= best_score as f64 {

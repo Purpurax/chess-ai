@@ -6,7 +6,7 @@ use crate::core::{board::Board, game::Game, move_generator::get_all_possible_mov
 
 type Move = (Position, Position);
 
-pub fn get_turn(game: &Game, max_compute_time: f64) -> (Position, Position) {
+pub fn get_turn(game: &Game, max_compute_time: f64, silent: bool) -> (Position, Position) {
     let maximizing_player: bool = game.player_turn;
     let now: f64 = timer::time();
     let mut depth: usize = 0;
@@ -48,8 +48,11 @@ pub fn get_turn(game: &Game, max_compute_time: f64) -> (Position, Position) {
         depth += 1;
     }
 
-    println!("\nMinimax:\n > Execution time {:.3?}\n > best score {}\n > depth: {}",
-        last_depth_time_elapsed, best_score_total, depth);
+    if !silent {
+        println!("\nMinimax:\n > Execution time {:.3?}\n > best score {}\n > depth: {}",
+            last_depth_time_elapsed, best_score_total, depth);
+    }
+    
     best_move_total.unwrap_or_else(|| panic!("Unable to find any minimax move"))
 }
 

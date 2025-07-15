@@ -22,7 +22,7 @@ Should immediate captures in a simulation be values more than later captures?
 
 
 ## Neural Networks
-- create new agent
+- improve the games further until gpu training can be applied
 
 ## en pasant
 This rule is not being considered as it complicates the code for no reason.

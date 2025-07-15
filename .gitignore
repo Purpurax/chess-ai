@@ -7,3 +7,4 @@ profile.json.gz
 Cargo.lock
 **/*.nn
 Cargo.lock
+Cargo.lock

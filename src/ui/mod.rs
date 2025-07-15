@@ -8,6 +8,7 @@ use ggez::{event, graphics, Context, GameError, GameResult};
 use good_web_game::{self as ggez, timer};
 use good_web_game::graphics::Color;
 
+use logic::determine_taken_pieces_images;
 use miniquad::GraphicsContext;
 use std::collections::HashMap;
 
@@ -73,7 +74,7 @@ impl Engine {
     }
 
     fn load_images(ctx: &mut Context, quad_ctx: &mut GraphicsContext) -> HashMap<String, Image> {
-        [
+        let mut images = [
             ("board", "/assets/board.png"),
             ("black pawn", "/assets/pieces/piece_black_pawn.png"),
             ("black knight", "/assets/pieces/piece_black_knight.png"),
@@ -92,12 +93,59 @@ impl Engine {
         ]
         .map(|(key, value)| (key.to_string(), Image::new(ctx, quad_ctx, value).unwrap()))
         .into_iter()
-        .collect()
+        .collect::<HashMap<String, Image>>();
+
+        [
+            ("taken pieces panel empty", "/assets/taken_panel/taken_pieces_panel_empty.png"),
+            ("taken pieces panel white pawn 1", "/assets/taken_panel/taken_pieces_panel_white_pawn_1.png"),
+            ("taken pieces panel white pawn 2", "/assets/taken_panel/taken_pieces_panel_white_pawn_2.png"),
+            ("taken pieces panel white pawn 3", "/assets/taken_panel/taken_pieces_panel_white_pawn_3.png"),
+            ("taken pieces panel white pawn 4", "/assets/taken_panel/taken_pieces_panel_white_pawn_4.png"),
+            ("taken pieces panel white pawn 5", "/assets/taken_panel/taken_pieces_panel_white_pawn_5.png"),
+            ("taken pieces panel white pawn 6", "/assets/taken_panel/taken_pieces_panel_white_pawn_6.png"),
+            ("taken pieces panel white pawn 7", "/assets/taken_panel/taken_pieces_panel_white_pawn_7.png"),
+            ("taken pieces panel white pawn 8", "/assets/taken_panel/taken_pieces_panel_white_pawn_8.png"),
+            ("taken pieces panel white knight 1", "/assets/taken_panel/taken_pieces_panel_white_knight_1.png"),
+            ("taken pieces panel white knight 2", "/assets/taken_panel/taken_pieces_panel_white_knight_2.png"),
+            ("taken pieces panel white bishop 1", "/assets/taken_panel/taken_pieces_panel_white_bishop_1.png"),
+            ("taken pieces panel white bishop 2", "/assets/taken_panel/taken_pieces_panel_white_bishop_2.png"),
+            ("taken pieces panel white rook 1", "/assets/taken_panel/taken_pieces_panel_white_rook_1.png"),
+            ("taken pieces panel white rook 2", "/assets/taken_panel/taken_pieces_panel_white_rook_2.png"),
+            ("taken pieces panel white queen", "/assets/taken_panel/taken_pieces_panel_white_queen.png"),
+            ("taken pieces panel black pawn 1", "/assets/taken_panel/taken_pieces_panel_black_pawn_1.png"),
+            ("taken pieces panel black pawn 2", "/assets/taken_panel/taken_pieces_panel_black_pawn_2.png"),
+            ("taken pieces panel black pawn 3", "/assets/taken_panel/taken_pieces_panel_black_pawn_3.png"),
+            ("taken pieces panel black pawn 4", "/assets/taken_panel/taken_pieces_panel_black_pawn_4.png"),
+            ("taken pieces panel black pawn 5", "/assets/taken_panel/taken_pieces_panel_black_pawn_5.png"),
+            ("taken pieces panel black pawn 6", "/assets/taken_panel/taken_pieces_panel_black_pawn_6.png"),
+            ("taken pieces panel black pawn 7", "/assets/taken_panel/taken_pieces_panel_black_pawn_7.png"),
+            ("taken pieces panel black pawn 8", "/assets/taken_panel/taken_pieces_panel_black_pawn_8.png"),
+            ("taken pieces panel black knight 1", "/assets/taken_panel/taken_pieces_panel_black_knight_1.png"),
+            ("taken pieces panel black knight 2", "/assets/taken_panel/taken_pieces_panel_black_knight_2.png"),
+            ("taken pieces panel black bishop 1", "/assets/taken_panel/taken_pieces_panel_black_bishop_1.png"),
+            ("taken pieces panel black bishop 2", "/assets/taken_panel/taken_pieces_panel_black_bishop_2.png"),
+            ("taken pieces panel black rook 1", "/assets/taken_panel/taken_pieces_panel_black_rook_1.png"),
+            ("taken pieces panel black rook 2", "/assets/taken_panel/taken_pieces_panel_black_rook_2.png"),
+            ("taken pieces panel black queen", "/assets/taken_panel/taken_pieces_panel_black_queen.png"),
+        ]
+        .map(|(key, value)| (key.to_string(), Image::new(ctx, quad_ctx, value).unwrap()))
+        .into_iter()
+        .for_each(|(key, value)| {
+            images.insert(key, value);
+        });
+
+        for i in 0..16 {
+            let key = format!("bottom panel {}", i);
+            let value = Image::new(ctx, quad_ctx, &format!("/assets/bottom_panel/chess_bottom_panel_{}.png", i)).unwrap();
+            images.insert(key, value);
+        }
+
+        images
     }
 
     fn calculate_offsets(window_width: f32, window_height: f32) -> Point2<f32> {
-        const GAME_IMAGES_WIDTH: f32 = 1280.0;
-        const GAME_IMAGES_HEIGHT: f32 = 1280.0;
+        const GAME_IMAGES_WIDTH: f32 = 30.0 + 1280.0 + 30.0;
+        const GAME_IMAGES_HEIGHT: f32 = 30.0 + 1280.0 + 30.0 + 150.0;
 
         let scale: Vector2<f32> = Engine::calculate_scale(window_width, window_height);
 
@@ -108,8 +156,8 @@ impl Engine {
     }
 
     fn calculate_scale(window_width: f32, window_height: f32) -> Vector2<f32> {
-        const GAME_IMAGES_WIDTH: f32 = 1280.0;
-        const GAME_IMAGES_HEIGHT: f32 = 1280.0;
+        const GAME_IMAGES_WIDTH: f32 = 30.0 + 1280.0 + 30.0;
+        const GAME_IMAGES_HEIGHT: f32 = 30.0 + 1280.0 + 30.0 + 150.0;
 
         let window_ratio: f32 = window_width / window_height;
         let game_images_ratio: f32 = GAME_IMAGES_WIDTH / GAME_IMAGES_HEIGHT;
@@ -237,6 +285,19 @@ impl EventHandler<GameError> for Engine {
                         let _ = graphics::draw(ctx, quad_ctx, &image, param);
                     }
                 });
+        }
+
+        /* Taken pieces panel */
+        let image: Image = self.images.get("taken pieces panel empty").unwrap().clone();
+        let dest: Point2<f32> = Point2::new(
+            self.offsets.x + 30.0 * self.scales.x,
+            self.offsets.y + (30.0 + 1280.0 + 30.0) * self.scales.y);
+            
+        let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
+        graphics::draw( ctx, quad_ctx, &image, param)?;
+            
+        for image in determine_taken_pieces_images(&self.images, &self.game.board) {            
+            graphics::draw( ctx, quad_ctx, &image, param)?;
         }
 
         /* Grabbed Piece */

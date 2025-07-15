@@ -114,7 +114,7 @@ impl Network {
         let mut network_stayed_same_counter: usize = 0;
         let mut train_counter: usize = 0;
 
-        while true {
+        loop {
             let network_changed: bool = self.train_against_minimax(0.5, 1.0, 1.0);
             if network_changed {
                 network_stayed_same_counter = 0;
@@ -138,7 +138,7 @@ impl Network {
         let mut network_stayed_same_counter: usize = 0;
         let mut train_counter: usize = 0;
 
-        while true {
+        loop {
             let network_changed: bool = self.train(0.3, 1.0);
             if network_changed {
                 network_stayed_same_counter = 0;
@@ -187,14 +187,14 @@ impl Network {
         let network_d: Network = network_c.mutate(mutation_rate, mutation_strength);
 
         let best_network_index: usize = [
-            &self,
+            self,
             &network_b,
             &network_c,
             &network_d
         ].into_par_iter()
             .map(|network| {
-                (Network::run_simulation_minimax(time_for_minimax, &network, true)
-                - Network::run_simulation_minimax(time_for_minimax, &network, false))
+                (Network::run_simulation_minimax(time_for_minimax, network, true)
+                - Network::run_simulation_minimax(time_for_minimax, network, false))
                 / 2
             })
             .enumerate()
@@ -222,10 +222,10 @@ impl Network {
 
         while game.get_winner().is_none() && game.step_counter < 50 {
             if game.player_turn ^ a_is_white {
-                let b_turn: (Position, Position) = get_turn(&game, &network_b, true);
+                let b_turn: (Position, Position) = get_turn(&game, network_b, true);
                 game.perform_move(&b_turn.0, &b_turn.1);
             } else {
-                let a_turn: (Position, Position) = get_turn(&game, &network_a, true);
+                let a_turn: (Position, Position) = get_turn(&game, network_a, true);
                 game.perform_move(&a_turn.0, &a_turn.1);
             }
         }
@@ -246,7 +246,7 @@ impl Network {
                 let turn: (Position, Position) = minimax::get_turn(&game, time_for_minimax, true);
                 game.perform_move(&turn.0, &turn.1);
             } else {
-                let turn: (Position, Position) = get_turn(&game, &network, true);
+                let turn: (Position, Position) = get_turn(&game, network, true);
                 game.perform_move(&turn.0, &turn.1);
             }
         }
@@ -256,10 +256,10 @@ impl Network {
 }
 
 pub fn read_network_from_file(file_path: &str) -> Result<Network, Box<dyn Error>> {
-    let file_content = std::fs::read_to_string(&file_path)
-        .expect(&format!("Failed to read file at path: {}", file_path));
+    let file_content = std::fs::read_to_string(file_path)
+        .unwrap_or_else(|_| panic!("Failed to read file at path: {}", file_path));
     let network: Network = serde_json::from_str(&file_content)
-        .expect(&format!("Failed to deserialize network from file: {}", file_path));
+        .unwrap_or_else(|_| panic!("Failed to deserialize network from file: {}", file_path));
     if !has_correct_format(&network) {
         return Err("Network has incorrect format".into());
     }
@@ -291,7 +291,7 @@ pub fn has_correct_format(network: &Network) -> bool {
 
 pub fn get_turn(initial_game: &Game, network: &Network, silent: bool) -> (Position, Position) {
     let start_time: f64 = timer::time();
-    let inital_game_score: f64 = evaluate_game(&initial_game, network);
+    let inital_game_score: f64 = evaluate_game(initial_game, network);
 
     let best_move: (Position, Position) = get_all_possible_moves(&initial_game.board, initial_game.player_turn)
         .into_iter()
@@ -299,8 +299,8 @@ pub fn get_turn(initial_game: &Game, network: &Network, silent: bool) -> (Positi
             let mut future_game_a: Game = initial_game.clone();
             let mut future_game_b: Game = initial_game.clone();
 
-            future_game_a.perform_move(&from_pos_a, &to_pos_a);
-            future_game_b.perform_move(&from_pos_b, &to_pos_b);
+            future_game_a.perform_move(from_pos_a, to_pos_a);
+            future_game_b.perform_move(from_pos_b, to_pos_b);
 
             let future_game_score_a: f64 = evaluate_game(&future_game_a, network);
             let future_game_score_b: f64 = evaluate_game(&future_game_b, network);
@@ -351,7 +351,7 @@ fn evaluate_game(game: &Game, network: &Network) -> f64 {
         .enumerate()
         .map(|(x, node)| {
             let mut new_value: f64 = *values.get(x).unwrap();
-            new_value += (*node.weights).into_iter()
+            new_value += (*node.weights).iter()
                 .enumerate()
                 .map(|(y, weight)| {
                     weight * values.get(y).unwrap()

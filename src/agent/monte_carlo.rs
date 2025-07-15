@@ -285,8 +285,8 @@ fn ucb_selection(tree: &Tree, index_of_parent: usize) -> usize {
             tree.get_node(*child)
         }).enumerate()
         .max_by(|(_, child1), (_, child2)| {
-            let score1: f64 = ucb_score(&child1, root_node_total_visits);
-            let score2: f64 = ucb_score(&child2, root_node_total_visits);
+            let score1: f64 = ucb_score(child1, root_node_total_visits);
+            let score2: f64 = ucb_score(child2, root_node_total_visits);
 
             score1.partial_cmp(&score2).unwrap_or(std::cmp::Ordering::Equal)
         })

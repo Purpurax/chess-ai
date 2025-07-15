@@ -61,8 +61,7 @@ pub fn get_position_of_coordinates_bottom_panel(
     let logical_x: f32 = (x - offsets.x) / scales.x;
     let logical_y: f32 = (y - offsets.y) / scales.y;
 
-    if logical_y < BOARD_BORDER + BOARD_SIZE + BOARD_BORDER + TAKE_PANEL_HEIGHT + 50.0
-    || logical_y > BOARD_BORDER + BOARD_SIZE + BOARD_BORDER + TAKE_PANEL_HEIGHT + 190.0 {
+    if !(BOARD_BORDER + BOARD_SIZE + BOARD_BORDER + TAKE_PANEL_HEIGHT + 50.0..=BOARD_BORDER + BOARD_SIZE + BOARD_BORDER + TAKE_PANEL_HEIGHT + 190.0).contains(&logical_y) {
         return None;
     }
 

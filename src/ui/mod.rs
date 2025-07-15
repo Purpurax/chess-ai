@@ -18,7 +18,6 @@ use crate::core::game::Game;
 use crate::core::move_generator::get_possible_moves;
 use crate::core::piece::{Piece, PieceType};
 use crate::core::position::Position;
-use crate::core::snapshot;
 use crate::ui::logic::get_position_of_coordinates;
 
 use self::carry_piece::CarryPiece;
@@ -43,9 +42,7 @@ pub struct Engine {
     cooldown_until: f64,
 
     white_agent: Option<Agent>,
-    black_agent: Option<Agent>,
-
-    debug: bool,
+    black_agent: Option<Agent>
 }
 
 impl Engine {
@@ -70,8 +67,7 @@ impl Engine {
             carry_piece,
             cooldown_until,
             white_agent: None,
-            black_agent: None,
-            debug: false,
+            black_agent: None
         })
     }
 
@@ -138,7 +134,7 @@ impl Engine {
 
         for i in 0..16 {
             let key = format!("bottom panel {}", i);
-            let value = Image::new(ctx, quad_ctx, &format!("/assets/bottom_panel/chess_bottom_panel_{}.png", i)).unwrap();
+            let value = Image::new(ctx, quad_ctx, format!("/assets/bottom_panel/chess_bottom_panel_{}.png", i)).unwrap();
             images.insert(key, value);
         }
 
@@ -198,26 +194,18 @@ impl Engine {
         let carry_piece: CarryPiece = CarryPiece::new();
         let cooldown_until: f64 = timer::time();
 
-        let white_agent = if let Some(agent) = &self.white_agent {
-            Some(match agent.agent_type {
+        let white_agent = self.white_agent.as_ref().map(|agent| match agent.agent_type {
                 AgentType::Random => Agent::new_random(),
                 AgentType::Minimax => Agent::new_minimax(),
                 AgentType::MonteCarlo(_) => Agent::new_monte_carlo(),
                 AgentType::NeuralNetwork(_) => Agent::new_neural_network()
-            })
-        } else {
-            None
-        };
-        let black_agent = if let Some(agent) = &self.black_agent {
-            Some(match agent.agent_type {
+            });
+        let black_agent = self.black_agent.as_ref().map(|agent| match agent.agent_type {
                 AgentType::Random => Agent::new_random(),
                 AgentType::Minimax => Agent::new_minimax(),
                 AgentType::MonteCarlo(_) => Agent::new_monte_carlo(),
                 AgentType::NeuralNetwork(_) => Agent::new_neural_network()
-            })
-        } else {
-            None
-        };
+            });
 
         *self = Engine {
             game,
@@ -228,8 +216,7 @@ impl Engine {
             carry_piece,
             cooldown_until,
             white_agent,
-            black_agent,
-            debug: false,
+            black_agent
         }
     }
 }
@@ -255,11 +242,7 @@ impl EventHandler<GameError> for Engine {
 
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut GraphicsContext) -> GameResult {
         /* Background */
-        if self.debug {
-            graphics::clear(ctx, quad_ctx, Color::from_rgb_u32(0x46a12f));
-        } else {
-            graphics::clear(ctx, quad_ctx, Color::from_rgb_u32(0x3F2832));
-        }
+        graphics::clear(ctx, quad_ctx, Color::from_rgb_u32(0x3F2832));
 
         let param: DrawParam = DrawParam::new().dest(self.offsets).scale(self.scales);
         graphics::draw(ctx, quad_ctx, &self.images["board"], param)?;
@@ -313,27 +296,25 @@ impl EventHandler<GameError> for Engine {
                         let _ = graphics::draw(ctx, quad_ctx, &image, param);
                 });
             }
-        } else {
-            if self.game.player_turn && self.white_agent.is_none()
-            || !self.game.player_turn && self.black_agent.is_none() {
-                self.game.board
-                    .iterator_positions_and_pieces()
-                    .filter(|(_, piece)| piece.get_color() == self.game.player_turn)
-                    .for_each(|(pos, piece)| {
-                        if get_possible_moves(
-                            &self.game.board,
-                            piece.get_color(),
-                            &pos
-                        ).into_iter().peekable().peek().is_some() {
-                            let image: Image = self.images["outline green"].clone();
-            
-                            let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);
-            
-                            let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
-                            let _ = graphics::draw(ctx, quad_ctx, &image, param);
-                        }
-                    });
-            }
+        } else if self.game.player_turn && self.white_agent.is_none()
+        || !self.game.player_turn && self.black_agent.is_none() {
+            self.game.board
+                .iterator_positions_and_pieces()
+                .filter(|(_, piece)| piece.get_color() == self.game.player_turn)
+                .for_each(|(pos, piece)| {
+                    if get_possible_moves(
+                        &self.game.board,
+                        piece.get_color(),
+                        &pos
+                    ).into_iter().peekable().peek().is_some() {
+                        let image: Image = self.images["outline green"].clone();
+        
+                        let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);
+        
+                        let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
+                        let _ = graphics::draw(ctx, quad_ctx, &image, param);
+                    }
+                });
         }
 
         /* Show winner */
@@ -461,55 +442,5 @@ impl EventHandler<GameError> for Engine {
         }
         
         self.carry_piece.clear();
-    }
-
-    fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _quad_ctx: &mut GraphicsContext,
-        keycode: miniquad::KeyCode,
-        _keymods: event::KeyMods,
-    ) {
-        // Unimportant debug stuff
-        // if keycode == miniquad::KeyCode::Enter {
-        //     self.debug = !self.debug;
-        //     if self.debug {
-        //         snapshot::enter_debug(&self.game);
-
-        //         self.game
-        //             .board
-        //             .clone()
-        //             .iterator_positions_and_pieces()
-        //             .flat_map(|(from_pos, piece)| {
-        //                 get_possible_moves(
-        //                     &self.game.board,
-        //                     piece.get_color(),
-        //                     from_pos.clone(),
-        //                     true)
-        //                     .map(move |to_pos| (from_pos.clone(), to_pos.clone()))
-        //                     .map(|(from, to)| {
-        //                         let mut new_board: Board = self.game.board.clone();
-        //                         new_board.move_from_to(&from, &to);
-        //                         new_board
-        //                     })
-        //             })
-        //             .for_each(|board| {
-        //                 println!("{}", board);
-        //                 snapshot::save_state(&board);
-        //             });
-        //     } else {
-        //         self.game.board = Board::import(snapshot::exit_debug());
-        //     }
-        // }
-
-        if !self.debug {
-            return;
-        }
-
-        if keycode == miniquad::KeyCode::Left {
-            self.game.board = Board::import(snapshot::debug_left());
-        } else if keycode == miniquad::KeyCode::Right {
-            self.game.board = Board::import(snapshot::debug_right());
-        }
     }
 }

@@ -79,7 +79,8 @@ impl Agent {
     }
 
     pub fn get_next_turn(&mut self) -> (Position, Position) {
-        let res = match &mut self.agent_type {
+        
+        match &mut self.agent_type {
             AgentType::Random => random::get_turn(&self.game),
             AgentType::Minimax => minimax::get_turn(&self.game, self.max_compute_time, false),
             AgentType::MonteCarlo(ref mut tree) => {
@@ -88,7 +89,6 @@ impl Agent {
             AgentType::NeuralNetwork(network) => {
                 neural_network::get_turn(&self.game, network, false)
             }
-        };
-        res
+        }
     }
 }

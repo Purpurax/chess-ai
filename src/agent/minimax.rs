@@ -1,4 +1,4 @@
-use std::{cmp::{max, min}, isize};
+use std::cmp::{max, min};
 
 use good_web_game::timer;
 
@@ -33,10 +33,8 @@ pub fn get_turn(game: &Game, max_compute_time: f64, silent: bool) -> (Position, 
 
             let noise: f64 = rand::random::<f64>() % 1.0;
 
-            if maximizing_player && score.unwrap() as f64 + noise >= best_score as f64 {
-                best_move = Some(move_used);
-                best_score = score.unwrap();
-            } else if !maximizing_player && score.unwrap() as f64 + noise <= best_score as f64 {
+            if maximizing_player && score.unwrap() as f64 + noise >= best_score as f64
+            || !maximizing_player && score.unwrap() as f64 + noise <= best_score as f64 {
                 best_move = Some(move_used);
                 best_score = score.unwrap();
             }

@@ -3,14 +3,12 @@ mod core;
 mod ui;
 
 use agent::neural_network::Network;
-use agent::Agent;
 use ggez::conf::Conf;
 use ggez::GameResult;
 use good_web_game as ggez;
 use ui::Engine;
 
-use crate::agent::monte_carlo::Tree;
-use crate::agent::{neural_network, AgentType};
+use crate::agent::neural_network;
 
 fn main() {
     #[cfg(feature = "train")]
@@ -25,21 +23,8 @@ fn run_game() -> GameResult {
         .window_resizable(true)
         .window_title("Chess AI | Purpurax".to_string());
 
-    let white_agent: Option<Agent> =
-        // None;
-        // Some(Agent::new(AgentType::Random, 1.0));
-        // Some(Agent::new(AgentType::Minimax, 1.0));
-        // Some(Agent::new(AgentType::MonteCarlo(Tree::new()), 1.0)); // Currently ~37000 nodes
-        Some(Agent::new(AgentType::NeuralNetwork(neural_network::read_network_from_file("/home/master/Project/Rust/chess-ai/data/test.nn").expect("Couldn't load neural network")), 1.0));
-    let black_agent: Option<Agent> =
-        None;
-        // Some(Agent::new(AgentType::Random, 1.0));
-        // Some(Agent::new(AgentType::Minimax, 1.0)); // Currently ~5
-        // Some(Agent::new(AgentType::MonteCarlo(Tree::new()), 1.0));
-        // Some(Agent::new(AgentType::NeuralNetwork(neural_network::read_network_from_file("/home/master/Project/Rust/chess-ai/data/test.nn").expect("Couldn't load neural network")), 1.0));
-
     ggez::start(conf, move |context, quad_ctx| {
-        Box::new(Engine::new(context, quad_ctx, white_agent, black_agent).unwrap())
+        Box::new(Engine::new(context, quad_ctx).unwrap())
     })
 }
 

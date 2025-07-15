@@ -8,15 +8,15 @@ use ggez::{event, graphics, Context, GameError, GameResult};
 use good_web_game::{self as ggez, timer};
 use good_web_game::graphics::Color;
 
-use logic::determine_taken_pieces_images;
+use logic::{determine_bottom_panel_image, determine_taken_pieces_images, get_new_agents_after_button_press, get_position_of_coordinates_bottom_panel, reset_button_is_clicked};
 use miniquad::GraphicsContext;
 use std::collections::HashMap;
 
-use crate::agent::Agent;
+use crate::agent::{Agent, AgentType};
 use crate::core::board::Board;
 use crate::core::game::Game;
 use crate::core::move_generator::get_possible_moves;
-use crate::core::piece::Piece;
+use crate::core::piece::{Piece, PieceType};
 use crate::core::position::Position;
 use crate::core::snapshot;
 use crate::ui::logic::get_position_of_coordinates;
@@ -25,6 +25,11 @@ use self::carry_piece::CarryPiece;
 use self::logic::{determine_image, determine_image_position};
 
 const COOLDOWN_TIME: f64 = 0.2;
+pub const BOARD_BORDER: f32 = 30.0;
+pub const PIECE_SIZE: f32 = 160.0;
+pub const BOARD_SIZE: f32 = 8.0 * PIECE_SIZE;
+pub const TAKE_PANEL_HEIGHT: f32 = 150.0;
+const BOTTOM_PANEL_HEIGHT: f32 = 240.0;
 
 pub struct Engine {
     game: Game,
@@ -32,6 +37,7 @@ pub struct Engine {
     images: HashMap<String, Image>,
     offsets: Point2<f32>,
     scales: Vector2<f32>,
+    force_draw: bool,
 
     carry_piece: CarryPiece,
     cooldown_until: f64,
@@ -43,12 +49,7 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new(
-        ctx: &mut Context,
-        quad_ctx: &mut GraphicsContext,
-        white_agent: Option<Agent>,
-        black_agent: Option<Agent>
-    ) -> GameResult<Engine> {
+    pub fn new(ctx: &mut Context, quad_ctx: &mut GraphicsContext) -> GameResult<Engine> {
         let game: Game = Game::new();
 
         let images: HashMap<String, Image> = Engine::load_images(ctx, quad_ctx);
@@ -65,10 +66,11 @@ impl Engine {
             images,
             offsets,
             scales,
+            force_draw: true,
             carry_piece,
             cooldown_until,
-            white_agent,
-            black_agent,
+            white_agent: None,
+            black_agent: None,
             debug: false,
         })
     }
@@ -144,8 +146,8 @@ impl Engine {
     }
 
     fn calculate_offsets(window_width: f32, window_height: f32) -> Point2<f32> {
-        const GAME_IMAGES_WIDTH: f32 = 30.0 + 1280.0 + 30.0;
-        const GAME_IMAGES_HEIGHT: f32 = 30.0 + 1280.0 + 30.0 + 150.0;
+        const GAME_IMAGES_WIDTH: f32 = BOARD_BORDER + BOARD_SIZE + BOARD_BORDER;
+        const GAME_IMAGES_HEIGHT: f32 = BOARD_BORDER + BOARD_SIZE + BOARD_BORDER + TAKE_PANEL_HEIGHT + BOTTOM_PANEL_HEIGHT;
 
         let scale: Vector2<f32> = Engine::calculate_scale(window_width, window_height);
 
@@ -156,8 +158,8 @@ impl Engine {
     }
 
     fn calculate_scale(window_width: f32, window_height: f32) -> Vector2<f32> {
-        const GAME_IMAGES_WIDTH: f32 = 30.0 + 1280.0 + 30.0;
-        const GAME_IMAGES_HEIGHT: f32 = 30.0 + 1280.0 + 30.0 + 150.0;
+        const GAME_IMAGES_WIDTH: f32 = BOARD_BORDER + BOARD_SIZE + BOARD_BORDER;
+        const GAME_IMAGES_HEIGHT: f32 = BOARD_BORDER + BOARD_SIZE + BOARD_BORDER + TAKE_PANEL_HEIGHT + BOTTOM_PANEL_HEIGHT;
 
         let window_ratio: f32 = window_width / window_height;
         let game_images_ratio: f32 = GAME_IMAGES_WIDTH / GAME_IMAGES_HEIGHT;
@@ -183,6 +185,53 @@ impl Engine {
 
         self.cooldown_until = timer::time() + COOLDOWN_TIME;
     }
+
+    fn reset(&mut self, ctx: &mut Context, quad_ctx: &mut GraphicsContext) {
+        let game: Game = Game::new();
+
+        let images: HashMap<String, Image> = Engine::load_images(ctx, quad_ctx);
+
+        let (window_width, window_height): (f32, f32) = graphics::drawable_size(quad_ctx);
+        let offsets: Point2<f32> = Engine::calculate_offsets(window_width, window_height);
+        let scales: Vector2<f32> = Engine::calculate_scale(window_width, window_height);
+
+        let carry_piece: CarryPiece = CarryPiece::new();
+        let cooldown_until: f64 = timer::time();
+
+        let white_agent = if let Some(agent) = &self.white_agent {
+            Some(match agent.agent_type {
+                AgentType::Random => Agent::new_random(),
+                AgentType::Minimax => Agent::new_minimax(),
+                AgentType::MonteCarlo(_) => Agent::new_monte_carlo(),
+                AgentType::NeuralNetwork(_) => Agent::new_neural_network()
+            })
+        } else {
+            None
+        };
+        let black_agent = if let Some(agent) = &self.black_agent {
+            Some(match agent.agent_type {
+                AgentType::Random => Agent::new_random(),
+                AgentType::Minimax => Agent::new_minimax(),
+                AgentType::MonteCarlo(_) => Agent::new_monte_carlo(),
+                AgentType::NeuralNetwork(_) => Agent::new_neural_network()
+            })
+        } else {
+            None
+        };
+
+        *self = Engine {
+            game,
+            images,
+            offsets,
+            scales,
+            force_draw: true,
+            carry_piece,
+            cooldown_until,
+            white_agent,
+            black_agent,
+            debug: false,
+        }
+    }
 }
 
 impl EventHandler<GameError> for Engine {
@@ -191,12 +240,8 @@ impl EventHandler<GameError> for Engine {
             return Ok(())
         }
 
-        if self.game.get_winner().is_some() {
-            match self.game.get_winner().unwrap() {
-                0 => println!("Black has won the game !!!"),
-                1 => println!("White has won the game !!!"),
-                _ => println!("Remis"),
-            }
+        if self.game.get_winner().is_some() || self.force_draw {
+            return Ok(())
         } else if self.game.player_turn && self.white_agent.is_some() {
             let agent_move: (Position, Position) = self.white_agent.clone().unwrap().get_next_turn();
             self.perform_move(&agent_move.0, &agent_move.1);
@@ -250,48 +295,72 @@ impl EventHandler<GameError> for Engine {
 
         /* Possible moves and takes */
         if let Some(carry_position) = self.carry_piece.position() {
-            get_possible_moves(
-                &self.game.board,
-                self.game.player_turn,
-                carry_position
-            ).into_iter().for_each(|to| {
-                let image: Image =
-                    if Board::get_layer_value_at(self.game.board.get_empty_layer(), &to) {
-                        self.images["outline green"].clone()
-                    } else {
-                        self.images["outline red"].clone()
-                    };
+            if self.game.player_turn && self.white_agent.is_none()
+            || !self.game.player_turn && self.black_agent.is_none() {
+                get_possible_moves(&self.game.board, self.game.player_turn, carry_position)
+                    .into_iter()
+                    .for_each(|to| {
+                        let image: Image =
+                            if Board::get_layer_value_at(self.game.board.get_empty_layer(), &to) {
+                                self.images["outline green"].clone()
+                            } else {
+                                self.images["outline red"].clone()
+                            };
 
-                let dest: Point2<f32> = determine_image_position(&to, &self.offsets, &self.scales);
+                        let dest: Point2<f32> = determine_image_position(&to, &self.offsets, &self.scales);
 
-                let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
-                let _ = graphics::draw(ctx, quad_ctx, &image, param);
-            });
-        } else {
-            self.game.board
-                .iterator_positions_and_pieces()
-                .filter(|(_, piece)| piece.get_color() == self.game.player_turn )
-                .for_each(|(pos, piece)| {
-                    if get_possible_moves(
-                        &self.game.board,
-                        piece.get_color(),
-                        &pos
-                    ).into_iter().peekable().peek().is_some() {
-                        let image: Image = self.images["outline green"].clone();
-        
-                        let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);
-        
                         let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
                         let _ = graphics::draw(ctx, quad_ctx, &image, param);
-                    }
+                });
+            }
+        } else {
+            if self.game.player_turn && self.white_agent.is_none()
+            || !self.game.player_turn && self.black_agent.is_none() {
+                self.game.board
+                    .iterator_positions_and_pieces()
+                    .filter(|(_, piece)| piece.get_color() == self.game.player_turn)
+                    .for_each(|(pos, piece)| {
+                        if get_possible_moves(
+                            &self.game.board,
+                            piece.get_color(),
+                            &pos
+                        ).into_iter().peekable().peek().is_some() {
+                            let image: Image = self.images["outline green"].clone();
+            
+                            let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);
+            
+                            let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
+                            let _ = graphics::draw(ctx, quad_ctx, &image, param);
+                        }
+                    });
+            }
+        }
+
+        /* Show winner */
+        if let Some(winner) = self.game.get_winner() {
+            self.game.board
+                .iterator_positions_and_pieces()
+                .filter(|(_, piece)| piece.piece_type() != PieceType::Empty)
+                .for_each(|(pos, piece)| {
+                    let image = if piece.get_color() && winner == 1
+                        || !piece.get_color() && winner == 0 {
+                            self.images["outline green"].clone()
+                        } else {
+                            self.images["outline red"].clone()
+                        };
+            
+                    let dest: Point2<f32> = determine_image_position(&pos, &self.offsets, &self.scales);
+    
+                    let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
+                    let _ = graphics::draw(ctx, quad_ctx, &image, param);
                 });
         }
 
         /* Taken pieces panel */
         let image: Image = self.images.get("taken pieces panel empty").unwrap().clone();
         let dest: Point2<f32> = Point2::new(
-            self.offsets.x + 30.0 * self.scales.x,
-            self.offsets.y + (30.0 + 1280.0 + 30.0) * self.scales.y);
+            self.offsets.x + BOARD_BORDER * self.scales.x,
+            self.offsets.y + (BOARD_BORDER + BOARD_SIZE + BOARD_BORDER) * self.scales.y);
             
         let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
         graphics::draw( ctx, quad_ctx, &image, param)?;
@@ -299,6 +368,15 @@ impl EventHandler<GameError> for Engine {
         for image in determine_taken_pieces_images(&self.images, &self.game.board) {            
             graphics::draw( ctx, quad_ctx, &image, param)?;
         }
+
+        /* Agent selection panel */
+        let image: Image = determine_bottom_panel_image(&self.images, &self.white_agent, &self.black_agent);
+        let dest: Point2<f32> = Point2::new(
+            self.offsets.x + BOARD_BORDER * self.scales.x,
+            self.offsets.y + (BOARD_BORDER + BOARD_SIZE + BOARD_BORDER + TAKE_PANEL_HEIGHT) * self.scales.y);
+        
+        let param: DrawParam = DrawParam::new().dest(dest).scale(self.scales);
+        graphics::draw(ctx, quad_ctx, &image, param)?;
 
         /* Grabbed Piece */
         if let Some(piece) = self.carry_piece.piece() {
@@ -310,6 +388,8 @@ impl EventHandler<GameError> for Engine {
                 graphics::draw(ctx, quad_ctx, &image.unwrap(), param)?;
             }
         }
+
+        self.force_draw = false;
 
         graphics::present(ctx, quad_ctx)
     }
@@ -329,12 +409,28 @@ impl EventHandler<GameError> for Engine {
 
     fn mouse_button_down_event(
         &mut self,
-        _ctx: &mut Context,
-        _quad_ctx: &mut GraphicsContext,
+        ctx: &mut Context,
+        quad_ctx: &mut GraphicsContext,
         _button: event::MouseButton,
         x: f32,
         y: f32,
     ) {
+        if let Some(button_index) = get_position_of_coordinates_bottom_panel(x, y, &self.offsets, &self.scales) {
+            get_new_agents_after_button_press(&mut self.white_agent, &mut self.black_agent, button_index);
+            self.force_draw = true;
+            return
+        }
+
+        if reset_button_is_clicked(x, y, &self.offsets, &self.scales) {
+            self.reset(ctx, quad_ctx);
+            self.force_draw = true;
+        }
+
+        if self.game.player_turn && self.white_agent.is_some()
+        || !self.game.player_turn && self.black_agent.is_some() {
+            return
+        }
+
         if let Some(position) = get_position_of_coordinates(x, y, &self.offsets, &self.scales) {
             let piece: Piece = self.game.board.get_piece_at(&position);
 

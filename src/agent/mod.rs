@@ -30,6 +30,40 @@ impl Agent {
         }
     }
 
+    pub fn new_random() -> Agent {
+        Agent {
+            agent_type: AgentType::Random,
+            game: Game::new(),
+            max_compute_time: 1.0
+        }
+    }
+
+    pub fn new_minimax() -> Agent {
+        Agent {
+            agent_type: AgentType::Minimax,
+            game: Game::new(),
+            max_compute_time: 1.0
+        }
+    }
+
+    pub fn new_monte_carlo() -> Agent {
+        Agent {
+            agent_type: AgentType::MonteCarlo(Tree::new()),
+            game: Game::new(),
+            max_compute_time: 1.0
+        }
+    }
+
+    pub fn new_neural_network() -> Agent {
+        Agent {
+            agent_type: AgentType::NeuralNetwork(neural_network::read_network_from_file(
+                "./assets/neural_network_weights.nn"
+            ).unwrap()),
+            game: Game::new(),
+            max_compute_time: 1.0
+        }
+    }
+
     pub fn inform_about_move(&mut self, from_pos: &Position, to_pos: &Position) {
         match &mut self.agent_type {
             AgentType::Random |

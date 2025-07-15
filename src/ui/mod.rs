@@ -110,6 +110,7 @@ impl Engine {
             ("taken pieces panel white rook 1", "/assets/taken_panel/taken_pieces_panel_white_rook_1.png"),
             ("taken pieces panel white rook 2", "/assets/taken_panel/taken_pieces_panel_white_rook_2.png"),
             ("taken pieces panel white queen", "/assets/taken_panel/taken_pieces_panel_white_queen.png"),
+            ("taken pieces panel white king", "/assets/taken_panel/taken_pieces_panel_white_king.png"),
             ("taken pieces panel black pawn 1", "/assets/taken_panel/taken_pieces_panel_black_pawn_1.png"),
             ("taken pieces panel black pawn 2", "/assets/taken_panel/taken_pieces_panel_black_pawn_2.png"),
             ("taken pieces panel black pawn 3", "/assets/taken_panel/taken_pieces_panel_black_pawn_3.png"),
@@ -125,6 +126,7 @@ impl Engine {
             ("taken pieces panel black rook 1", "/assets/taken_panel/taken_pieces_panel_black_rook_1.png"),
             ("taken pieces panel black rook 2", "/assets/taken_panel/taken_pieces_panel_black_rook_2.png"),
             ("taken pieces panel black queen", "/assets/taken_panel/taken_pieces_panel_black_queen.png"),
+            ("taken pieces panel black king", "/assets/taken_panel/taken_pieces_panel_black_king.png"),
         ]
         .map(|(key, value)| (key.to_string(), Image::new(ctx, quad_ctx, value).unwrap()))
         .into_iter()

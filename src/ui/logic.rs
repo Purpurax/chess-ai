@@ -178,11 +178,14 @@ pub fn determine_taken_pieces_images(images: &HashMap<String, Image>, board: &Bo
     let white_bishop_count: u32 = (board.layer_color & board.layer_bishop).count_ones();
     let white_rook_count: u32 = (board.layer_color & board.layer_rook).count_ones();
     let white_queen_count: u32 = (board.layer_color & board.layer_queen).count_ones();
+    let white_king_count: u32 = (board.layer_color & board.layer_king).count_ones();
+
     let black_pawn_count: u32 = (!board.layer_color & board.layer_pawn).count_ones();
     let black_knight_count: u32 = (!board.layer_color & board.layer_knight).count_ones();
     let black_bishop_count: u32 = (!board.layer_color & board.layer_bishop).count_ones();
     let black_rook_count: u32 = (!board.layer_color & board.layer_rook).count_ones();
     let black_queen_count: u32 = (!board.layer_color & board.layer_queen).count_ones();
+    let black_king_count: u32 = (!board.layer_color & board.layer_king).count_ones();
 
     let mut result: Vec<Image> = vec![];
 
@@ -211,6 +214,11 @@ pub fn determine_taken_pieces_images(images: &HashMap<String, Image>, board: &Bo
             images["taken pieces panel white queen"].clone()
         );
     }
+    if white_king_count < 1 {
+        result.push(
+            images["taken pieces panel white king"].clone()
+        );
+    }
 
     if black_pawn_count < 8 {
         result.push(
@@ -235,6 +243,11 @@ pub fn determine_taken_pieces_images(images: &HashMap<String, Image>, board: &Bo
     if black_queen_count < 1 {
         result.push(
             images["taken pieces panel black queen"].clone()
+        );
+    }
+    if black_king_count < 1 {
+        result.push(
+            images["taken pieces panel black king"].clone()
         );
     }
 
